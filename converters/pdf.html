@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF & Universal Data Analyser, Parser and Converter</title>
+    <title>Data Analyser, Parser and Converter</title>
     
     <!-- PDF.js library for reading PDF files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -153,7 +153,7 @@
             padding: 6px 8px;
             background: #fff;
             vertical-align: middle;
-            white-space: nowrap;
+            white-space: pre-wrap; /* Preserves linebreaks inside cells cleanly */
         }
 
         .excel-table tr:hover td { background-color: #f1f5f9; }
@@ -203,7 +203,7 @@
         }
 
         .field-label { font-weight: bold; font-size: 11px; color: var(--text-muted); margin-right: 6px; text-transform: uppercase; }
-        .field-val { font-size: 12px; color: var(--text-main); word-break: break-all; }
+        .field-val { font-size: 12px; color: var(--text-main); word-break: break-all; white-space: pre-wrap; }
 
         .header-title { display: block; margin-bottom: 4px; color: var(--text-main); font-family: system-ui, sans-serif; }
         .header-controls { display: flex; flex-direction: column; gap: 4px; }
@@ -241,8 +241,8 @@
 
     <!-- HOME VIEW -->
     <div id="homeView" class="view active">
-        <h2>PDF & Universal Data Analyser, Parser and Converter</h2>
-        <textarea id="rawDataInput" placeholder="Paste CSV, JSON, TSV, or load a PDF / document file below..."></textarea>
+        <h2>Data Analyser, Parser and Converter</h2>
+        <textarea id="rawDataInput" placeholder="Paste CSV, TSV, JSON, or load a document file below..."></textarea>
 
         <div class="action-bar">
             <button onclick="convertData()">⚡ Convert Data</button>
@@ -292,7 +292,6 @@
 </div>
 
 <script>
-    // Configure PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     let parsedRecords = [];
@@ -341,7 +340,6 @@
             };
             reader.readAsArrayBuffer(file);
         } else {
-            // Text, CSV, JSON files
             const reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById("rawDataInput").value = e.target.result;
@@ -359,22 +357,18 @@
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             
-            // Group text items by Y coordinate (vertical position) to reconstruct lines & table rows
             const linesMap = {};
             textContent.items.forEach(item => {
-                const y = Math.round(item.transform[5]); // Y position
-                const x = Math.round(item.transform[4]); // X position
+                const y = Math.round(item.transform[5]);
+                const x = Math.round(item.transform[4]);
                 if (!linesMap[y]) linesMap[y] = [];
                 linesMap[y].push({ x: x, text: item.str });
             });
 
-            // Sort Y positions top to bottom (descending Y)
             const sortedY = Object.keys(linesMap).map(Number).sort((a, b) => b - a);
 
             sortedY.forEach(y => {
-                // Sort items left to right
                 const lineItems = linesMap[y].sort((a, b) => a.x - b.x);
-                // Join text items separated by tabs for column detection
                 const lineStr = lineItems.map(item => item.text.trim()).filter(t => t).join("\t");
                 if (lineStr.trim()) fullTextLines.push(lineStr);
             });
@@ -383,7 +377,7 @@
         return fullTextLines.join("\n");
     }
 
-    /* --- DYNAMIC MULTI-FORMAT PARSER --- */
+    /* --- QUOTE-AWARE DELIMITER & JSON PARSER --- */
     function convertData() {
         const rawText = document.getElementById("rawDataInput").value.trim();
         if (!rawText) {
@@ -394,7 +388,7 @@
         parsedRecords = parseDynamicData(rawText);
 
         if (!parsedRecords || parsedRecords.length === 0) {
-            alert("Could not extract structured data. Please ensure the file contains valid CSV, JSON, Tabular, or Delimited text.");
+            alert("Could not extract structured data. Please ensure the file contains valid CSV, TSV, JSON, or Delimited text.");
             return;
         }
 
@@ -422,46 +416,74 @@
             } catch (e) { }
         }
 
-        // 2. Delimiter / Tabular Parsing (CSV, TSV, Tab-separated PDF text)
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-        if (lines.length > 0) {
-            let delimiter = ',';
-            if (lines[0].includes('\t')) delimiter = '\t';
-            else if (lines[0].includes('|')) delimiter = '|';
-
-            const headers = splitDelimitedLine(lines[0], delimiter);
-            const records = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const vals = splitDelimitedLine(lines[i], delimiter);
-                if (vals.length > 0) {
-                    let obj = {};
-                    headers.forEach((h, idx) => {
-                        obj[h || `Col_${idx + 1}`] = vals[idx] !== undefined ? vals[idx] : "";
-                    });
-                    records.push(obj);
-                }
-            }
-            if (records.length > 0) return records;
-        }
-
-        return null;
+        // 2. Quote-Aware State Machine for CSV/TSV
+        return parseCSVOrTSV(text);
     }
 
-    function splitDelimitedLine(line, delimiter) {
-        let result = [];
-        let cur = '';
+    function parseCSVOrTSV(text) {
+        // Detect delimiter (Tab vs Comma vs Pipe)
+        const tabCount = (text.match(/\t/g) || []).length;
+        const commaCount = (text.match(/,/g) || []).length;
+        const pipeCount = (text.match(/\|/g) || []).length;
+
+        let delimiter = '\t';
+        if (commaCount > tabCount && commaCount > pipeCount) delimiter = ',';
+        else if (pipeCount > tabCount && pipeCount > commaCount) delimiter = '|';
+
+        let rows = [];
+        let currentRow = [];
+        let currentCell = '';
         let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-            let char = line[i];
-            if (char === '"') inQuotes = !inQuotes;
-            else if (char === delimiter && !inQuotes) {
-                result.push(cur.replace(/^"|"$/g, '').trim());
-                cur = '';
-            } else cur += char;
+
+        for (let i = 0; i < text.length; i++) {
+            let char = text[i];
+            let nextChar = text[i + 1];
+
+            if (char === '"') {
+                if (inQuotes && nextChar === '"') {
+                    currentCell += '"'; // Escaped double quote ""
+                    i++;
+                } else {
+                    inQuotes = !inQuotes; // Toggle quote state
+                }
+            } else if (char === delimiter && !inQuotes) {
+                currentRow.push(currentCell.trim());
+                currentCell = '';
+            } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                if (char === '\r' && nextChar === '\n') i++; // Handle CRLF
+                currentRow.push(currentCell.trim());
+                if (currentRow.some(c => c !== '')) {
+                    rows.push(currentRow);
+                }
+                currentRow = [];
+                currentCell = '';
+            } else {
+                currentCell += char; // Includes newlines inside quotes
+            }
         }
-        result.push(cur.replace(/^"|"$/g, '').trim());
-        return result;
+
+        if (currentCell !== '' || currentRow.length > 0) {
+            currentRow.push(currentCell.trim());
+            if (currentRow.some(c => c !== '')) {
+                rows.push(currentRow);
+            }
+        }
+
+        if (rows.length < 2) return null;
+
+        const headers = rows[0];
+        const records = [];
+
+        for (let r = 1; r < rows.length; r++) {
+            let rowData = rows[r];
+            let obj = {};
+            headers.forEach((h, idx) => {
+                obj[h || `Col_${idx + 1}`] = rowData[idx] !== undefined ? rowData[idx] : "";
+            });
+            records.push(obj);
+        }
+
+        return records;
     }
 
     /* --- DYNAMIC HEADER & TABLE RENDERING --- */
@@ -641,7 +663,7 @@
 
     /* --- HISTORY MANAGEMENT --- */
     function saveToHistory(rawText, name, colCount, recordCount) {
-        let history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+        let history = JSON.parse(localStorage.getItem("data_analyzer_history_v4") || "[]");
         const newEntry = {
             id: Date.now(),
             timestamp: new Date().toLocaleString(),
@@ -652,12 +674,12 @@
         };
         history.unshift(newEntry);
         history = history.slice(0, 10);
-        localStorage.setItem("pdf_universal_data_history", JSON.stringify(history));
+        localStorage.setItem("data_analyzer_history_v4", JSON.stringify(history));
     }
 
     function renderHistory() {
         const container = document.getElementById("historyContainer");
-        const history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+        const history = JSON.parse(localStorage.getItem("data_analyzer_history_v4") || "[]");
 
         if (history.length === 0) {
             container.innerHTML = `<div class="empty-state">No previous history found.</div>`;
@@ -698,7 +720,7 @@
     }
 
     function loadHistoryItem(id) {
-        const history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+        const history = JSON.parse(localStorage.getItem("data_analyzer_history_v4") || "[]");
         const item = history.find(h => h.id === id);
         if (item) {
             datasetName = item.name;
@@ -708,9 +730,9 @@
     }
 
     function deleteHistoryItem(id) {
-        let history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+        let history = JSON.parse(localStorage.getItem("data_analyzer_history_v4") || "[]");
         history = history.filter(h => h.id !== id);
-        localStorage.setItem("pdf_universal_data_history", JSON.stringify(history));
+        localStorage.setItem("data_analyzer_history_v4", JSON.stringify(history));
         renderHistory();
     }
 
