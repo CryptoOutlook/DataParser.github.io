@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Analyser, Parser and Converter</title>
+    <title>PDF & Universal Data Analyser, Parser and Converter</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -239,7 +239,7 @@
 
     <!-- HOME VIEW -->
     <div id="homeView" class="view active">
-        <h2>Data Analyser, Parser and Converter</h2>
+        <h2>PDF & Universal Data Analyser, Parser and Converter</h2>
         <textarea id="rawDataInput" placeholder="Paste unformatted PDF text, CSV, TSV, JSON, or load a document file below..."></textarea>
 
         <div class="action-bar">
@@ -406,7 +406,6 @@
     }
 
     function parseDynamicData(text) {
-        // 1. JSON Parsing
         if (text.startsWith('[') || text.startsWith('{')) {
             try {
                 const data = JSON.parse(text);
@@ -414,7 +413,6 @@
             } catch (e) { }
         }
 
-        // 2. Specialized Pattern Extractor for Unformatted PDF Text (Smushed PDF Data)
         if (text.includes("HR") && (text.includes("Division") || text.includes("B.O") || text.includes("S.O"))) {
             const pdfUnsmushed = parseSmushedPdfText(text);
             if (pdfUnsmushed && pdfUnsmushed.length > 0) {
@@ -422,14 +420,11 @@
             }
         }
 
-        // 3. Quote-Aware State Machine for CSV/TSV
         return parseCSVOrTSV(text);
     }
 
-    /* Pattern Parser for Raw Smushed PDF Merit List Text */
     function parseSmushedPdfText(text) {
         const records = [];
-        // Pattern matches: S.No, Division, Office, Post Name, Post Community, Reg No, Candidate Name, Marks, Candidate Community, Gender, Verifying Office
         const pattern = /(\d+)\s*([A-Za-z\s]+?Division)\s*(.*?\b[BS]\.O)\s*(.*?\b[BS]\.O\s*-\s*(?:ABPM|BPM|Dak Sevak))\s*(UR|EWS|OBC|SC|ST)\s*(HR[A-Z0-9]{12})\s*(.*?)\s*(\d{2,3}(?:\.\d+)?)\s*(UR|EWS|OBC|SC|ST)\s*(Female|Male)\s*(.*?)(?=\d+\s*[A-Za-z\s]+?Division|$)/gis;
 
         let match;
