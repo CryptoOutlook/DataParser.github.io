@@ -1,0 +1,29 @@
+<!-- Load PDF.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<input type="file" id="pdfFile" accept=".pdf" />
+
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  document.getElementById('pdfFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+      const typedarray = new Uint8Array(event.target.result);
+
+      pdfjsLib.getDocument(typedarray).promise.then(pdf => {
+        // Fetch text from Page 1
+        pdf.getPage(1).then(page => {
+          page.getTextContent().then(textContent => {
+            const text = textContent.items.map(item => item.str).join(' ');
+            console.log("Page 1 Text:", text);
+          });
+        });
+      });
+    };
+
+    reader.readAsArrayBuffer(file);
+  });
+</script>
