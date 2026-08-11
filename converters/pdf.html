@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF & Universal Data Analyser, Parser and Converter</title>
+    
+    <!-- PDF.js library for reading PDF files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- jsPDF & jsPDF AutoTable for PDF Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #059669;
+            --success-hover: #047857;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --border: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --excel-header: #f1f5f9;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        h2, h3 { margin-top: 0; color: var(--text-main); }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 13px;
+            box-sizing: border-box;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        button:hover { background-color: var(--primary-hover); }
+        button.success { background-color: var(--success); }
+        button.success:hover { background-color: var(--success-hover); }
+        button.secondary { background-color: #64748b; }
+        button.secondary:hover { background-color: #475569; }
+        button.danger { background-color: var(--danger); }
+        button.danger:hover { background-color: var(--danger-hover); }
+
+        .loading-status {
+            display: none;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .history-section { margin-top: 28px; border-top: 2px solid #e2e8f0; padding-top: 20px; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .history-table th, .history-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+        .history-table th { background: var(--excel-header); font-weight: 600; }
+
+        .meta-banner {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 650px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 12px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+
+        .excel-table th {
+            position: sticky;
+            top: 0;
+            background: var(--excel-header);
+            border-bottom: 2px solid var(--border);
+            border-right: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+            font-weight: 700;
+            z-index: 10;
+            vertical-align: top;
+        }
+
+        .excel-table td {
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            background: #fff;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .excel-table tr:hover td { background-color: #f1f5f9; }
+
+        .record-group.completed td, .stacked-card.completed {
+            background-color: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            text-decoration: line-through;
+        }
+
+        .stacked-container { display: flex; flex-direction: column; gap: 12px; padding: 8px; }
+        .stacked-card {
+            display: flex;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .stacked-side {
+            background: #f8fafc;
+            border-right: 1px solid var(--border);
+            padding: 12px;
+            min-width: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stacked-side .row-label { font-weight: bold; font-size: 13px; color: var(--primary); }
+        .stacked-content { flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .stacked-row-line { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .field-item {
+            flex: 1;
+            min-width: 200px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 4px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .field-label { font-weight: bold; font-size: 11px; color: var(--text-muted); margin-right: 6px; text-transform: uppercase; }
+        .field-val { font-size: 12px; color: var(--text-main); word-break: break-all; }
+
+        .header-title { display: block; margin-bottom: 4px; color: var(--text-main); font-family: system-ui, sans-serif; }
+        .header-controls { display: flex; flex-direction: column; gap: 4px; }
+        .header-filter { width: 100%; padding: 3px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; background: white; outline: none; }
+        
+        .btn-col-copy {
+            background: #e2e8f0;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 2px 4px;
+            font-size: 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-copy-mini {
+            background: #e2e8f0;
+            color: var(--text-main);
+            border: none;
+            padding: 2px 6px;
+            font-size: 11px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+
+        .btn-copy-mini.copied { background: var(--success) !important; color: white !important; }
+        .empty-state { text-align: center; padding: 30px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 8px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HOME VIEW -->
+    <div id="homeView" class="view active">
+        <h2>PDF & Universal Data Analyser, Parser and Converter</h2>
+        <textarea id="rawDataInput" placeholder="Paste CSV, JSON, TSV, or load a PDF / document file below..."></textarea>
+
+        <div class="action-bar">
+            <button onclick="convertData()">⚡ Convert Data</button>
+            <button class="secondary" onclick="document.getElementById('fileLoader').click()">📄 Load File (PDF, CSV, JSON, TXT)</button>
+            <input type="file" id="fileLoader" accept=".pdf,.csv,.json,.txt,.tsv,.log" style="display:none" onchange="handleFileUpload(event)">
+            <button class="secondary" onclick="clearInput()">Clear Input</button>
+            <span id="loadingStatus" class="loading-status">⏳ Reading PDF content...</span>
+        </div>
+
+        <div class="history-section">
+            <h3>Previous Conversions History</h3>
+            <div id="historyContainer"></div>
+        </div>
+    </div>
+
+    <!-- CONVERTED DATA VIEW -->
+    <div id="convertedView" class="view">
+        <div class="action-bar" style="justify-content: space-between;">
+            <button class="secondary" onclick="showHomeView()">← Load New Data (Home)</button>
+            <div style="display:flex; gap:8px;">
+                <button class="secondary" onclick="toggleViewMode()">↔ View: <span id="viewModeLabel">Stacked Rows</span></button>
+                <button class="success" onclick="exportCSV()">📥 Save CSV</button>
+                <button class="success" onclick="exportJSON()">📥 Save JSON</button>
+                <button class="success" onclick="exportPDF()">📥 Save PDF</button>
+                <button class="secondary" onclick="resetFilters()">Reset Filters</button>
+            </div>
+        </div>
+
+        <div class="meta-banner">
+            <div>Detected Columns: <span id="metaColCount" style="color:var(--primary);">0</span></div>
+            <div>Total Records: <span id="metaTotalRecords">0</span></div>
+            <div>File Identifier: <span id="metaFileName">Dataset</span></div>
+        </div>
+
+        <div class="table-wrapper" id="singleTableContainer">
+            <table class="excel-table" id="excelTable">
+                <thead>
+                    <tr id="tableHeaderRow"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="stackedTableContainer" class="stacked-container" style="display: none;"></div>
+    </div>
+
+</div>
+
+<script>
+    // Configure PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    let parsedRecords = [];
+    let activeRecords = [];
+    let detectedColumns = [];
+    let datasetName = "Converted_Data";
+    let isStackedView = false;
+
+    document.addEventListener("DOMContentLoaded", renderHistory);
+
+    function showHomeView() {
+        document.getElementById("convertedView").classList.remove("active");
+        document.getElementById("homeView").classList.add("active");
+        renderHistory();
+    }
+
+    function showConvertedView() {
+        document.getElementById("homeView").classList.remove("active");
+        document.getElementById("convertedView").classList.add("active");
+    }
+
+    function clearInput() { document.getElementById("rawDataInput").value = ""; }
+
+    /* --- FILE LOADING & PDF EXTRACTION --- */
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        datasetName = file.name.replace(/\.[^/.]+$/, "");
+        const statusEl = document.getElementById("loadingStatus");
+
+        if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
+            statusEl.style.display = "inline";
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const typedarray = new Uint8Array(e.target.result);
+                parsePdfToText(typedarray).then(extractedText => {
+                    statusEl.style.display = "none";
+                    document.getElementById("rawDataInput").value = extractedText;
+                    convertData();
+                }).catch(err => {
+                    statusEl.style.display = "none";
+                    alert("Error reading PDF: " + err.message);
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            // Text, CSV, JSON files
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById("rawDataInput").value = e.target.result;
+                convertData();
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    async function parsePdfToText(arrayBuffer) {
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullTextLines = [];
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            
+            // Group text items by Y coordinate (vertical position) to reconstruct lines & table rows
+            const linesMap = {};
+            textContent.items.forEach(item => {
+                const y = Math.round(item.transform[5]); // Y position
+                const x = Math.round(item.transform[4]); // X position
+                if (!linesMap[y]) linesMap[y] = [];
+                linesMap[y].push({ x: x, text: item.str });
+            });
+
+            // Sort Y positions top to bottom (descending Y)
+            const sortedY = Object.keys(linesMap).map(Number).sort((a, b) => b - a);
+
+            sortedY.forEach(y => {
+                // Sort items left to right
+                const lineItems = linesMap[y].sort((a, b) => a.x - b.x);
+                // Join text items separated by tabs for column detection
+                const lineStr = lineItems.map(item => item.text.trim()).filter(t => t).join("\t");
+                if (lineStr.trim()) fullTextLines.push(lineStr);
+            });
+        }
+
+        return fullTextLines.join("\n");
+    }
+
+    /* --- DYNAMIC MULTI-FORMAT PARSER --- */
+    function convertData() {
+        const rawText = document.getElementById("rawDataInput").value.trim();
+        if (!rawText) {
+            alert("Please paste data or load a file first.");
+            return;
+        }
+
+        parsedRecords = parseDynamicData(rawText);
+
+        if (!parsedRecords || parsedRecords.length === 0) {
+            alert("Could not extract structured data. Please ensure the file contains valid CSV, JSON, Tabular, or Delimited text.");
+            return;
+        }
+
+        const keysSet = new Set();
+        parsedRecords.forEach(r => Object.keys(r).forEach(k => keysSet.add(k)));
+        detectedColumns = Array.from(keysSet);
+
+        saveToHistory(rawText, datasetName, detectedColumns.length, parsedRecords.length);
+
+        activeRecords = [...parsedRecords];
+        document.getElementById("metaColCount").textContent = detectedColumns.length;
+        document.getElementById("metaFileName").textContent = datasetName;
+        
+        buildExcelTableHeaders();
+        renderDataViews(activeRecords);
+        showConvertedView();
+    }
+
+    function parseDynamicData(text) {
+        // 1. JSON Parsing
+        if (text.startsWith('[') || text.startsWith('{')) {
+            try {
+                const data = JSON.parse(text);
+                return Array.isArray(data) ? data : [data];
+            } catch (e) { }
+        }
+
+        // 2. Delimiter / Tabular Parsing (CSV, TSV, Tab-separated PDF text)
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length > 0) {
+            let delimiter = ',';
+            if (lines[0].includes('\t')) delimiter = '\t';
+            else if (lines[0].includes('|')) delimiter = '|';
+
+            const headers = splitDelimitedLine(lines[0], delimiter);
+            const records = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const vals = splitDelimitedLine(lines[i], delimiter);
+                if (vals.length > 0) {
+                    let obj = {};
+                    headers.forEach((h, idx) => {
+                        obj[h || `Col_${idx + 1}`] = vals[idx] !== undefined ? vals[idx] : "";
+                    });
+                    records.push(obj);
+                }
+            }
+            if (records.length > 0) return records;
+        }
+
+        return null;
+    }
+
+    function splitDelimitedLine(line, delimiter) {
+        let result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            let char = line[i];
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === delimiter && !inQuotes) {
+                result.push(cur.replace(/^"|"$/g, '').trim());
+                cur = '';
+            } else cur += char;
+        }
+        result.push(cur.replace(/^"|"$/g, '').trim());
+        return result;
+    }
+
+    /* --- DYNAMIC HEADER & TABLE RENDERING --- */
+    function buildExcelTableHeaders() {
+        const headerRow = document.getElementById("tableHeaderRow");
+        headerRow.innerHTML = "";
+
+        const actionTh = document.createElement("th");
+        actionTh.innerHTML = `<span class="header-title">Actions</span>`;
+        headerRow.appendChild(actionTh);
+
+        detectedColumns.forEach(col => {
+            const th = document.createElement("th");
+            const uniqueVals = [...new Set(parsedRecords.map(r => String(r[col] || "")))].sort();
+
+            let optionsHtml = `<option value="ALL">(All)</option>`;
+            uniqueVals.forEach(val => {
+                optionsHtml += `<option value="${escapeAttr(val)}">${val}</option>`;
+            });
+
+            th.innerHTML = `
+                <span class="header-title">${col}</span>
+                <div class="header-controls">
+                    <select class="header-filter" onchange="applyFilters()">
+                        ${optionsHtml}
+                    </select>
+                    <button class="btn-col-copy" onclick="copyColumnValues('${escapeAttr(col)}', this)">📋 Copy Column</button>
+                </div>
+            `;
+            headerRow.appendChild(th);
+        });
+    }
+
+    function applyFilters() {
+        const selects = document.querySelectorAll("#tableHeaderRow select");
+        activeRecords = parsedRecords.filter(record => {
+            let matches = true;
+            selects.forEach((select, index) => {
+                const colName = detectedColumns[index];
+                if (select.value !== "ALL" && String(record[colName] || "") !== select.value) {
+                    matches = false;
+                }
+            });
+            return matches;
+        });
+        renderDataViews(activeRecords);
+    }
+
+    function resetFilters() {
+        document.querySelectorAll("#tableHeaderRow select").forEach(s => s.value = "ALL");
+        applyFilters();
+    }
+
+    function toggleViewMode() {
+        isStackedView = !isStackedView;
+        document.getElementById("viewModeLabel").textContent = isStackedView ? "Single Line Table" : "Stacked Rows";
+        document.getElementById("singleTableContainer").style.display = isStackedView ? "none" : "block";
+        document.getElementById("stackedTableContainer").style.display = isStackedView ? "flex" : "none";
+    }
+
+    function renderDataViews(records) {
+        renderSingleLineTable(records);
+        renderStackedRows(records);
+        document.getElementById("metaTotalRecords").textContent = records.length;
+    }
+
+    function renderSingleLineTable(records) {
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+
+        records.forEach((rec) => {
+            const tr = document.createElement("tr");
+            tr.className = "record-group";
+
+            const tdAction = document.createElement("td");
+            const checkBtn = document.createElement("button");
+            checkBtn.className = "btn-copy-mini";
+            checkBtn.textContent = "✓ Complete";
+            checkBtn.onclick = () => tr.classList.toggle("completed");
+            tdAction.appendChild(checkBtn);
+            tr.appendChild(tdAction);
+
+            detectedColumns.forEach(col => {
+                const td = document.createElement("td");
+                const val = rec[col] !== undefined ? String(rec[col]) : "";
+                
+                const span = document.createElement("span");
+                span.textContent = val;
+                
+                const btn = document.createElement("button");
+                btn.className = "btn-copy-mini";
+                btn.textContent = "📋";
+                btn.onclick = () => copyText(val, btn);
+                
+                td.appendChild(span);
+                td.appendChild(btn);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderStackedRows(records) {
+        const container = document.getElementById("stackedTableContainer");
+        container.innerHTML = "";
+
+        const chunks = [];
+        for (let i = 0; i < detectedColumns.length; i += 3) {
+            chunks.push(detectedColumns.slice(i, i + 3));
+        }
+
+        records.forEach((rec, index) => {
+            const card = document.createElement("div");
+            card.className = "stacked-card";
+
+            const side = document.createElement("div");
+            side.className = "stacked-side";
+            
+            const label = document.createElement("div");
+            label.className = "row-label";
+            label.textContent = `Row #${index + 1}`;
+
+            const completeBtn = document.createElement("button");
+            completeBtn.className = "btn-copy-mini";
+            completeBtn.textContent = "✓ Rule Out";
+            completeBtn.onclick = () => card.classList.toggle("completed");
+
+            side.appendChild(label);
+            side.appendChild(completeBtn);
+
+            const content = document.createElement("div");
+            content.className = "stacked-content";
+
+            chunks.forEach(cols => {
+                content.appendChild(createStackedLine(cols, rec));
+            });
+
+            card.appendChild(side);
+            card.appendChild(content);
+            container.appendChild(card);
+        });
+    }
+
+    function createStackedLine(cols, record) {
+        const line = document.createElement("div");
+        line.className = "stacked-row-line";
+
+        cols.forEach(col => {
+            const val = record[col] !== undefined ? String(record[col]) : "";
+            const item = document.createElement("div");
+            item.className = "field-item";
+
+            item.innerHTML = `
+                <div>
+                    <span class="field-label">${col}:</span>
+                    <span class="field-val">${val}</span>
+                </div>
+            `;
+
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "btn-copy-mini";
+            copyBtn.textContent = "📋";
+            copyBtn.onclick = () => copyText(val, copyBtn);
+
+            item.appendChild(copyBtn);
+            line.appendChild(item);
+        });
+
+        return line;
+    }
+
+    function copyColumnValues(colName, btnEl) {
+        const colValues = activeRecords.map(r => String(r[colName] || "")).join("\n");
+        copyText(colValues, btnEl);
+    }
+
+    /* --- HISTORY MANAGEMENT --- */
+    function saveToHistory(rawText, name, colCount, recordCount) {
+        let history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+        const newEntry = {
+            id: Date.now(),
+            timestamp: new Date().toLocaleString(),
+            name: name,
+            colCount: colCount,
+            recordCount: recordCount,
+            rawText: rawText
+        };
+        history.unshift(newEntry);
+        history = history.slice(0, 10);
+        localStorage.setItem("pdf_universal_data_history", JSON.stringify(history));
+    }
+
+    function renderHistory() {
+        const container = document.getElementById("historyContainer");
+        const history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+
+        if (history.length === 0) {
+            container.innerHTML = `<div class="empty-state">No previous history found.</div>`;
+            return;
+        }
+
+        let html = `
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Saved Time</th>
+                        <th>Dataset Identifier</th>
+                        <th>Columns</th>
+                        <th>Records</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        history.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.timestamp}</td>
+                    <td><b style="color:var(--primary);">${item.name}</b></td>
+                    <td>${item.colCount} cols</td>
+                    <td>${item.recordCount} records</td>
+                    <td>
+                        <button onclick="loadHistoryItem(${item.id})">Load</button>
+                        <button class="danger" onclick="deleteHistoryItem(${item.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    function loadHistoryItem(id) {
+        const history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+        const item = history.find(h => h.id === id);
+        if (item) {
+            datasetName = item.name;
+            document.getElementById("rawDataInput").value = item.rawText;
+            convertData();
+        }
+    }
+
+    function deleteHistoryItem(id) {
+        let history = JSON.parse(localStorage.getItem("pdf_universal_data_history") || "[]");
+        history = history.filter(h => h.id !== id);
+        localStorage.setItem("pdf_universal_data_history", JSON.stringify(history));
+        renderHistory();
+    }
+
+    /* --- EXPORTS --- */
+    function exportCSV() {
+        let csv = detectedColumns.join(",") + "\n";
+        activeRecords.forEach(r => {
+            const row = detectedColumns.map(col => `"${String(r[col] || "").replace(/"/g, '""')}"`);
+            csv += row.join(",") + "\n";
+        });
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        triggerDownload(blob, `${datasetName}.csv`);
+    }
+
+    function exportJSON() {
+        const jsonStr = JSON.stringify(activeRecords, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        triggerDownload(blob, `${datasetName}.json`);
+    }
+
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("landscape");
+        doc.setFontSize(14);
+        doc.text(`Dataset: ${datasetName}`, 14, 15);
+
+        const tableRows = activeRecords.map(r => detectedColumns.map(col => String(r[col] || "")));
+
+        doc.autoTable({
+            head: [detectedColumns],
+            body: tableRows,
+            startY: 22,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [37, 99, 235] }
+        });
+
+        doc.save(`${datasetName}.pdf`);
+    }
+
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function copyText(text, btnEl) {
+        navigator.clipboard.writeText(text).then(() => {
+            const orig = btnEl.textContent;
+            btnEl.textContent = "✓";
+            btnEl.classList.add("copied");
+            setTimeout(() => {
+                btnEl.textContent = orig;
+                btnEl.classList.remove("copied");
+            }, 1200);
+        });
+    }
+
+    function escapeAttr(str) {
+        return String(str).replace(/"/g, '&quot;');
+    }
+</script>
+
+</body>
+</html>
