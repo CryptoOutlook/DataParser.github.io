@@ -23,7 +23,7 @@
     }
 
     .container {
-      max-width: 750px;
+      max-width: 780px;
       margin: 0 auto;
       background: var(--card-bg);
       padding: 24px;
@@ -45,7 +45,12 @@
       font-size: 0.9rem;
     }
 
-    input, select {
+    .input-copy-wrap {
+      display: flex;
+      gap: 6px;
+    }
+
+    input, select, textarea {
       width: 100%;
       padding: 10px;
       border: 1px solid var(--border);
@@ -54,8 +59,33 @@
       font-size: 0.95rem;
     }
 
+    .btn-copy {
+      background: #e2e8f0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-copy:hover { background: #cbd5e1; }
+
     .row { display: flex; gap: 12px; }
     .row .form-group { flex: 1; }
+
+    .preview-box {
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #0369a1;
+      margin-top: -6px;
+      margin-bottom: 16px;
+    }
 
     .photo-preview {
       width: 85px;
@@ -128,53 +158,130 @@
   <form id="contactForm" onsubmit="handleFormSubmit(event)">
     <input type="hidden" id="contactId">
     
+    <!-- Photo Section -->
     <div class="form-group">
       <label for="photoInput">Profile Photo</label>
-      <input type="file" id="photoInput" class="photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'photoPreview')">
+      <div class="input-copy-wrap">
+        <input type="file" id="photoInput" class="photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'photoPreview')">
+        <button type="button" class="btn-copy" onclick="copyFieldValue('photoPreview', true)" title="Copy Photo Base64 Data">📋</button>
+      </div>
       <img id="photoPreview" class="photo-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>">
     </div>
 
-    <div class="form-group">
-      <label for="fullName">Full Name *</label>
-      <input type="text" id="fullName" required placeholder="John Doe">
+    <!-- Name Breakdown -->
+    <div class="row">
+      <div class="form-group">
+        <label for="firstName">First Name *</label>
+        <div class="input-copy-wrap">
+          <input type="text" id="firstName" required placeholder="Name" oninput="updateNamePreview()">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('firstName')" title="Copy First Name">📋</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="middleName">Middle Name</label>
+        <div class="input-copy-wrap">
+          <input type="text" id="middleName" placeholder="Middle Name" oninput="updateNamePreview()">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('middleName')" title="Copy Middle Name">📋</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="lastName">Last Name / Surname</label>
+        <div class="input-copy-wrap">
+          <input type="text" id="lastName" placeholder="Surname" oninput="updateNamePreview()">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('lastName')" title="Copy Last Name">📋</button>
+        </div>
+      </div>
     </div>
 
+    <!-- Live Full Name Preview -->
+    <div class="preview-box">
+      Full Name Preview: <span id="fullNamePreview">Name</span>
+      <button type="button" class="btn-copy" style="float:right; padding:2px 8px; font-size:0.8rem;" onclick="copyText(document.getElementById('fullNamePreview').innerText)" title="Copy Full Name">📋 Copy</button>
+    </div>
+
+    <!-- Contact Info -->
     <div class="row">
       <div class="form-group">
         <label for="phone">Phone Number *</label>
-        <input type="tel" id="phone" required placeholder="+91 9876543210">
+        <div class="input-copy-wrap">
+          <input type="tel" id="phone" required placeholder="+91 9876543210">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('phone')" title="Copy Phone">📋</button>
+        </div>
       </div>
       <div class="form-group">
         <label for="email">Email Address</label>
-        <input type="email" id="email" placeholder="john@example.com">
+        <div class="input-copy-wrap">
+          <input type="email" id="email" placeholder="example@mail.com">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('email')" title="Copy Email">📋</button>
+        </div>
       </div>
     </div>
 
+    <!-- Present & Permanent Address -->
+    <div class="form-group">
+      <label for="presentAddress">Present Address</label>
+      <div class="input-copy-wrap">
+        <textarea id="presentAddress" rows="2" placeholder="Street, City, State, Pincode"></textarea>
+        <button type="button" class="btn-copy" onclick="copyFieldValue('presentAddress')" title="Copy Present Address">📋</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="sameAddressCheck" onchange="toggleSameAddress(this)" style="width:auto;"> Permanent Address is same as Present Address
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label for="permanentAddress">Permanent Address</label>
+      <div class="input-copy-wrap">
+        <textarea id="permanentAddress" rows="2" placeholder="Street, City, State, Pincode"></textarea>
+        <button type="button" class="btn-copy" onclick="copyFieldValue('permanentAddress')" title="Copy Permanent Address">📋</button>
+      </div>
+    </div>
+
+    <!-- Identity Numbers -->
     <div class="row">
       <div class="form-group">
         <label for="aadhaar">Aadhaar Number</label>
-        <input type="text" id="aadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14" oninput="formatAadhaar(this)">
+        <div class="input-copy-wrap">
+          <input type="text" id="aadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14" oninput="formatAadhaar(this)">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('aadhaar')" title="Copy Aadhaar">📋</button>
+        </div>
       </div>
       <div class="form-group">
         <label for="pan">PAN Card Number</label>
-        <input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
+        <div class="input-copy-wrap">
+          <input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('pan')" title="Copy PAN">📋</button>
+        </div>
       </div>
     </div>
 
+    <!-- Map & Location -->
     <div class="row">
       <div class="form-group">
         <label for="latitude">Latitude</label>
-        <input type="number" step="any" id="latitude" placeholder="28.6139" onchange="syncLocation('latitude', 'longitude', 'digipin', 'mapFrame')">
+        <div class="input-copy-wrap">
+          <input type="number" step="any" id="latitude" placeholder="28.6139" onchange="syncLocation('latitude', 'longitude', 'digipin', 'mapFrame')">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('latitude')" title="Copy Latitude">📋</button>
+        </div>
       </div>
       <div class="form-group">
         <label for="longitude">Longitude</label>
-        <input type="number" step="any" id="longitude" placeholder="77.2090" onchange="syncLocation('latitude', 'longitude', 'digipin', 'mapFrame')">
+        <div class="input-copy-wrap">
+          <input type="number" step="any" id="longitude" placeholder="77.2090" onchange="syncLocation('latitude', 'longitude', 'digipin', 'mapFrame')">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('longitude')" title="Copy Longitude">📋</button>
+        </div>
       </div>
     </div>
 
     <div class="form-group">
       <label for="digipin">DIGIPIN (Auto-generated)</label>
-      <input type="text" id="digipin" placeholder="e.g. 3J8-2K1-L09" onchange="syncDigipin('digipin', 'latitude', 'longitude', 'mapFrame')">
+      <div class="input-copy-wrap">
+        <input type="text" id="digipin" placeholder="e.g. 3J8-2K1-L09" onchange="syncDigipin('digipin', 'latitude', 'longitude', 'mapFrame')">
+        <button type="button" class="btn-copy" onclick="copyFieldValue('digipin')" title="Copy DIGIPIN">📋</button>
+      </div>
     </div>
 
     <div class="form-group">
@@ -190,6 +297,7 @@
 
     <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
 
+    <!-- Dynamic Family Members -->
     <div class="form-group">
       <h3>Family Members (Optional)</h3>
       <div id="familyContainer"></div>
@@ -273,6 +381,37 @@
     }
   }
 
+  // Copy helper
+  function copyText(val) {
+    if (!val) return alert("Nothing to copy!");
+    navigator.clipboard.writeText(val);
+    alert("Copied to clipboard!");
+  }
+
+  function copyFieldValue(elementId, isImg = false) {
+    const el = document.getElementById(elementId);
+    const textToCopy = isImg ? el.src : el.value;
+    copyText(textToCopy);
+  }
+
+  function updateNamePreview() {
+    const f = document.getElementById('firstName').value.trim();
+    const m = document.getElementById('middleName').value.trim();
+    const l = document.getElementById('lastName').value.trim();
+    const full = [f, m, l].filter(Boolean).join(' ') || 'Name';
+    document.getElementById('fullNamePreview').innerText = full;
+  }
+
+  function toggleSameAddress(checkbox) {
+    const perm = document.getElementById('permanentAddress');
+    if (checkbox.checked) {
+      perm.value = document.getElementById('presentAddress').value;
+      perm.readOnly = true;
+    } else {
+      perm.readOnly = false;
+    }
+  }
+
   function formatAadhaar(el) {
     let v = el.value.replace(/\D/g, '').slice(0, 12);
     el.value = v.match(/.{1,4}/g)?.join('-') || '';
@@ -308,7 +447,13 @@
         <button type="button" class="btn-danger" onclick="document.getElementById('fam_${id}').remove()">X</button>
       </div>
       <div class="row">
-        <div class="form-group"><label>Name</label><input type="text" class="fam-name" value="${data.name || ''}"></div>
+        <div class="form-group">
+          <label>Name</label>
+          <div class="input-copy-wrap">
+            <input type="text" id="fam_name_${id}" class="fam-name" value="${data.name || ''}" placeholder="Name">
+            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_name_${id}')">📋</button>
+          </div>
+        </div>
         <div class="form-group"><label>Relation</label>
           <select class="fam-relation">
             <option value="Spouse">Spouse</option><option value="Child">Child</option><option value="Parent">Parent</option><option value="Sibling">Sibling</option>
@@ -316,17 +461,44 @@
         </div>
       </div>
       <div class="row">
-        <div class="form-group"><label>Phone</label><input type="tel" class="fam-phone" value="${data.phone || ''}"></div>
-        <div class="form-group"><label>Email</label><input type="email" class="fam-email" value="${data.email || ''}"></div>
+        <div class="form-group">
+          <label>Phone</label>
+          <div class="input-copy-wrap">
+            <input type="tel" id="fam_phone_${id}" class="fam-phone" value="${data.phone || ''}">
+            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_phone_${id}')">📋</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <div class="input-copy-wrap">
+            <input type="email" id="fam_email_${id}" class="fam-email" value="${data.email || ''}">
+            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_email_${id}')">📋</button>
+          </div>
+        </div>
       </div>
       <div class="form-group">
         <label>Photo</label>
-        <input type="file" class="fam-photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'fam_img_${id}')">
+        <div class="input-copy-wrap">
+          <input type="file" class="fam-photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'fam_img_${id}')">
+          <button type="button" class="btn-copy" onclick="copyFieldValue('fam_img_${id}', true)">📋</button>
+        </div>
         <img id="fam_img_${id}" class="photo-preview" src="${data.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}">
       </div>
       <div class="row">
-        <div class="form-group"><label>Aadhaar</label><input type="text" class="fam-aadhaar" value="${data.aadhaar || ''}" oninput="formatAadhaar(this)"></div>
-        <div class="form-group"><label>PAN</label><input type="text" class="fam-pan" value="${data.pan || ''}"></div>
+        <div class="form-group">
+          <label>Aadhaar</label>
+          <div class="input-copy-wrap">
+            <input type="text" id="fam_aadhaar_${id}" class="fam-aadhaar" value="${data.aadhaar || ''}" oninput="formatAadhaar(this)">
+            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_aadhaar_${id}')">📋</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>PAN</label>
+          <div class="input-copy-wrap">
+            <input type="text" id="fam_pan_${id}" class="fam-pan" value="${data.pan || ''}">
+            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_pan_${id}')">📋</button>
+          </div>
+        </div>
       </div>
       <div class="row">
         <div class="form-group"><label>Latitude</label><input type="number" step="any" id="fam_lat_${id}" class="fam-lat" value="${data.lat || ''}" onchange="syncLocation('fam_lat_${id}', 'fam_lng_${id}', 'fam_digi_${id}', 'fam_map_${id}')"></div>
@@ -355,11 +527,18 @@
       });
     });
 
+    const firstName = document.getElementById('firstName').value.trim();
+    const middleName = document.getElementById('middleName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ') || 'Name';
+
     return {
       id: document.getElementById('contactId').value || 'id_' + Date.now(),
-      fullName: document.getElementById('fullName').value,
+      firstName, middleName, lastName, fullName,
       phone: document.getElementById('phone').value,
       email: document.getElementById('email').value,
+      presentAddress: document.getElementById('presentAddress').value,
+      permanentAddress: document.getElementById('permanentAddress').value,
       photo: document.getElementById('photoPreview').src,
       aadhaar: document.getElementById('aadhaar').value,
       pan: document.getElementById('pan').value,
@@ -396,7 +575,7 @@
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = getFilename("json"); a.click();
     } else {
       const esc = s => `"${String(s || '').replace(/"/g, '""')}"`;
-      const csv = `ID,FullName,Phone,Email,Aadhaar,PAN,DIGIPIN,Latitude,Longitude,Photo\n${esc(payload.id)},${esc(payload.fullName)},${esc(payload.phone)},${esc(payload.email)},${esc(payload.aadhaar)},${esc(payload.pan)},${esc(payload.digipin)},${esc(payload.coordinates.lat)},${esc(payload.coordinates.lng)},${esc(payload.photo)}`;
+      const csv = `ID,FirstName,MiddleName,LastName,FullName,Phone,Email,PresentAddress,PermanentAddress,Aadhaar,PAN,DIGIPIN,Latitude,Longitude,Photo\n${esc(payload.id)},${esc(payload.firstName)},${esc(payload.middleName)},${esc(payload.lastName)},${esc(payload.fullName)},${esc(payload.phone)},${esc(payload.email)},${esc(payload.presentAddress)},${esc(payload.permanentAddress)},${esc(payload.aadhaar)},${esc(payload.pan)},${esc(payload.digipin)},${esc(payload.coordinates.lat)},${esc(payload.coordinates.lng)},${esc(payload.photo)}`;
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = getFilename("csv"); a.click();
     }
@@ -408,7 +587,7 @@
       navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
     } else {
       const esc = s => `"${String(s || '').replace(/"/g, '""')}"`;
-      const csv = `ID,FullName,Phone,Email,Aadhaar,PAN,DIGIPIN,Latitude,Longitude,Photo\n${esc(payload.id)},${esc(payload.fullName)},${esc(payload.phone)},${esc(payload.email)},${esc(payload.aadhaar)},${esc(payload.pan)},${esc(payload.digipin)},${esc(payload.coordinates.lat)},${esc(payload.coordinates.lng)},${esc(payload.photo)}`;
+      const csv = `ID,FirstName,MiddleName,LastName,FullName,Phone,Email,PresentAddress,PermanentAddress,Aadhaar,PAN,DIGIPIN,Latitude,Longitude,Photo\n${esc(payload.id)},${esc(payload.firstName)},${esc(payload.middleName)},${esc(payload.lastName)},${esc(payload.fullName)},${esc(payload.phone)},${esc(payload.email)},${esc(payload.presentAddress)},${esc(payload.permanentAddress)},${esc(payload.aadhaar)},${esc(payload.pan)},${esc(payload.digipin)},${esc(payload.coordinates.lat)},${esc(payload.coordinates.lng)},${esc(payload.photo)}`;
       navigator.clipboard.writeText(csv);
     }
     alert(`${format.toUpperCase()} copied to clipboard!`);
@@ -421,18 +600,26 @@
       const c = contacts.find(i => i.id === id);
       if (c) {
         document.getElementById('contactId').value = c.id;
-        document.getElementById('fullName').value = c.fullName || '';
+        document.getElementById('firstName').value = c.firstName || '';
+        document.getElementById('middleName').value = c.middleName || '';
+        document.getElementById('lastName').value = c.lastName || '';
+        updateNamePreview();
+
         document.getElementById('phone').value = c.phone || '';
         document.getElementById('email').value = c.email || '';
+        document.getElementById('presentAddress').value = c.presentAddress || '';
+        document.getElementById('permanentAddress').value = c.permanentAddress || '';
         document.getElementById('photoPreview').src = c.photo || '';
         document.getElementById('aadhaar').value = c.aadhaar || '';
         document.getElementById('pan').value = c.pan || '';
         document.getElementById('digipin').value = c.digipin || '';
+
         if (c.coordinates) {
           document.getElementById('latitude').value = c.coordinates.lat || '';
           document.getElementById('longitude').value = c.coordinates.lng || '';
           syncLocation('latitude', 'longitude', 'digipin', 'mapFrame');
         }
+
         if (c.familyMembers) c.familyMembers.forEach(f => addFamilyMember(f));
       }
     }
