@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIGIPIN Converter</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --accent: #059669;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 750px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-nav {
+      margin-bottom: 16px;
+    }
+
+    .header-nav a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+      color: var(--primary);
+    }
+
+    .section-card {
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      background: #fafafa;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .row .form-group {
+      flex: 1;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background-color: #64748b;
+    }
+
+    .result-box {
+      margin-top: 14px;
+      padding: 12px;
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+      border-radius: 6px;
+      font-weight: bold;
+      color: #0369a1;
+      word-break: break-all;
+    }
+
+    .map-container {
+      width: 100%;
+      height: 220px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-nav">
+    <a href="home.html">← Back to Dashboard</a> | <a href="form.html">Go to Form</a>
+  </div>
+
+  <h1>DIGIPIN Converter</h1>
+  <p style="color: #64748b; font-size: 0.95rem;">
+    Convert geographical coordinates (Latitude & Longitude) to India Post DIGIPIN grid codes and vice versa.
+  </p>
+
+  <!-- Lat/Long -> DIGIPIN -->
+  <div class="section-card">
+    <h2>1. Coordinates to DIGIPIN</h2>
+    <div class="row">
+      <div class="form-group">
+        <label for="latInput">Latitude</label>
+        <input type="number" step="any" id="latInput" placeholder="e.g. 28.6139">
+      </div>
+      <div class="form-group">
+        <label for="lngInput">Longitude</label>
+        <input type="number" step="any" id="lngInput" placeholder="e.g. 77.2090">
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button type="button" onclick="convertLatLngToDigipinUI()">Generate DIGIPIN</button>
+      <button type="button" class="btn-secondary" onclick="fetchCurrentLocUI()">Use My Current Location</button>
+    </div>
+
+    <div id="digipinResult" class="result-box" style="display: none;"></div>
+  </div>
+
+  <!-- DIGIPIN -> Lat/Long -->
+  <div class="section-card">
+    <h2>2. DIGIPIN to Coordinates</h2>
+    <div class="form-group">
+      <label for="digipinInput">DIGIPIN Code</label>
+      <input type="text" id="digipinInput" placeholder="e.g. 3J8-2K1-L09" style="text-transform: uppercase;">
+    </div>
+    <button type="button" onclick="convertDigipinToLatLngUI()">Decode DIGIPIN</button>
+
+    <div id="coordsResult" class="result-box" style="display: none;"></div>
+
+    <div class="map-container" id="mapWrapper" style="display: none;">
+      <iframe id="mapFrame" src="about:blank"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+  // DIGIPIN Core Algorithm (National Addressing Grid Spec)
+  const DIGIPIN_GRID = [
+    ['2', '3', '4', '5'],
+    ['6', '7', '8', '9'],
+    ['C', 'J', 'K', 'L'],
+    ['M', 'P', 'T', 'W']
+  ];
+
+  // Bounding Box for India Grid System
+  const BOUNDS = {
+    minLat: 2.0,
+    maxLat: 38.0,
+    minLng: 60.0,
+    maxLng: 100.0
+  };
+
+  function latLngToDigipin(lat, lng) {
+    lat = parseFloat(lat);
+    lng = parseFloat(lng);
+
+    if (isNaN(lat) || isNaN(lng)) return null;
+    if (lat < BOUNDS.minLat || lat > BOUNDS.maxLat || lng < BOUNDS.minLng || lng > BOUNDS.maxLng) {
+      return "Out of India Bounds";
+    }
+
+    let minLat = BOUNDS.minLat, maxLat = BOUNDS.maxLat;
+    let minLng = BOUNDS.minLng, maxLng = BOUNDS.maxLng;
+    let code = '';
+
+    for (let level = 0; level < 10; level++) {
+      let latStep = (maxLat - minLat) / 4;
+      let lngStep = (maxLng - minLng) / 4;
+
+      let col = Math.floor((lng - minLng) / lngStep);
+      let row = Math.floor((maxLat - lat) / latStep);
+
+      col = Math.max(0, Math.min(3, col));
+      row = Math.max(0, Math.min(3, row));
+
+      code += DIGIPIN_GRID[row][col];
+
+      maxLat = maxLat - row * latStep;
+      minLat = maxLat - latStep;
+      minLng = minLng + col * lngStep;
+      maxLng = minLng + lngStep;
+    }
+
+    // Format DIGIPIN as XXX-XXX-XXXX
+    return `${code.slice(0, 3)}-${code.slice(3, 6)}-${code.slice(6)}`;
+  }
+
+  function digipinToLatLng(digipin) {
+    if (!digipin) return null;
+    let cleanCode = digipin.replace(/[^2-9C-WC-wj-wj-w]/gi, '').toUpperCase();
+    if (cleanCode.length !== 10) return null;
+
+    let minLat = BOUNDS.minLat, maxLat = BOUNDS.maxLat;
+    let minLng = BOUNDS.minLng, maxLng = BOUNDS.maxLng;
+
+    for (let char of cleanCode) {
+      let found = false;
+      let row = -1, col = -1;
+
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (DIGIPIN_GRID[r][c] === char) {
+            row = r;
+            col = c;
+            found = true;
+            break;
+          }
+        }
+        if (found) break;
+      }
+
+      if (!found) return null;
+
+      let latStep = (maxLat - minLat) / 4;
+      let lngStep = (maxLng - minLng) / 4;
+
+      let newMaxLat = maxLat - row * latStep;
+      let newMinLat = newMaxLat - latStep;
+      let newMinLng = minLng + col * lngStep;
+      let newMaxLng = newMinLng + lngStep;
+
+      minLat = newMinLat;
+      maxLat = newMaxLat;
+      minLng = newMinLng;
+      maxLng = newMaxLng;
+    }
+
+    return {
+      lat: ((minLat + maxLat) / 2).toFixed(6),
+      lng: ((minLng + maxLng) / 2).toFixed(6)
+    };
+  }
+
+  // UI Interactivity Handlers
+  function convertLatLngToDigipinUI() {
+    const lat = document.getElementById('latInput').value;
+    const lng = document.getElementById('lngInput').value;
+    const resBox = document.getElementById('digipinResult');
+
+    const result = latLngToDigipin(lat, lng);
+    if (result) {
+      resBox.style.display = 'block';
+      resBox.innerHTML = `DIGIPIN: <strong>${result}</strong>`;
+    } else {
+      resBox.style.display = 'block';
+      resBox.innerHTML = `<span style="color:#dc2626;">Please enter valid Lat & Long coordinates.</span>`;
+    }
+  }
+
+  function fetchCurrentLocUI() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('latInput').value = pos.coords.latitude;
+        document.getElementById('lngInput').value = pos.coords.longitude;
+        convertLatLngToDigipinUI();
+      }, () => alert("Could not fetch geolocation."));
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  }
+
+  function convertDigipinToLatLngUI() {
+    const code = document.getElementById('digipinInput').value;
+    const resBox = document.getElementById('coordsResult');
+    const mapWrapper = document.getElementById('mapWrapper');
+    const mapFrame = document.getElementById('mapFrame');
+
+    const coords = digipinToLatLng(code);
+    if (coords) {
+      resBox.style.display = 'block';
+      resBox.innerHTML = `Decoded Coordinates: Latitude <strong>${coords.lat}</strong>, Longitude <strong>${coords.lng}</strong>`;
+      mapWrapper.style.display = 'block';
+      mapFrame.src = `https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`;
+    } else {
+      resBox.style.display = 'block';
+      resBox.innerHTML = `<span style="color:#dc2626;">Invalid DIGIPIN format. Must be 10 valid characters.</span>`;
+      mapWrapper.style.display = 'none';
+    }
+  }
+</script>
+
+</body>
+</html>
