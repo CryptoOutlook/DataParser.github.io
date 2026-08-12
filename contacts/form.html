@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Save / Edit Contact</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 750px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .top-nav {
+      margin-bottom: 16px;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+      color: var(--primary);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .row .form-group {
+      flex: 1;
+    }
+
+    .photo-preview {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 2px dashed var(--border);
+      object-fit: cover;
+      display: block;
+      margin-top: 8px;
+    }
+
+    .map-container {
+      width: 100%;
+      height: 180px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .family-card {
+      border: 1px solid var(--border);
+      background: #f1f5f9;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .family-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background-color: #64748b;
+    }
+
+    .btn-danger {
+      background-color: #ef4444;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="top-nav">
+    <a href="home.html" style="color: var(--primary); text-decoration: none; font-weight: 600;">← Back to Contacts</a>
+  </div>
+
+  <h2 id="formTitle">Contact Entry Form</h2>
+  <form id="contactForm" onsubmit="handleFormSubmit(event)">
+    <input type="hidden" id="contactId">
+    
+    <!-- Main Person Photo -->
+    <div class="form-group">
+      <label for="photoInput">Profile Photo</label>
+      <input type="file" id="photoInput" accept="image/*" onchange="previewPhoto(event, 'photoPreview')">
+      <img id="photoPreview" class="photo-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="Preview">
+    </div>
+
+    <!-- Basic Information -->
+    <div class="form-group">
+      <label for="fullName">Full Name *</label>
+      <input type="text" id="fullName" required placeholder="John Doe">
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="phone">Phone Number *</label>
+        <input type="tel" id="phone" required placeholder="+91 9876543210">
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="john@example.com">
+      </div>
+    </div>
+
+    <!-- Identity Information -->
+    <div class="row">
+      <div class="form-group">
+        <label for="aadhaar">Aadhaar Number</label>
+        <input type="text" id="aadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14" oninput="formatAadhaar(this)">
+      </div>
+      <div class="form-group">
+        <label for="pan">PAN Card Number</label>
+        <input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
+      </div>
+    </div>
+
+    <!-- Address & Location Details -->
+    <div class="form-group">
+      <label for="digipin">DIGIPIN</label>
+      <input type="text" id="digipin" placeholder="e.g. 3J8-2K1-L09">
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label for="latitude">Latitude</label>
+        <input type="number" step="any" id="latitude" placeholder="28.6139" onchange="updateMapEmbed('latitude', 'longitude', 'mapFrame')">
+      </div>
+      <div class="form-group">
+        <label for="longitude">Longitude</label>
+        <input type="number" step="any" id="longitude" placeholder="77.2090" onchange="updateMapEmbed('latitude', 'longitude', 'mapFrame')">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <button type="button" class="btn-secondary" onclick="getCurrentLocation('latitude', 'longitude', 'mapFrame')">Get Current Location</button>
+    </div>
+
+    <div class="form-group">
+      <label>Location Preview</label>
+      <div class="map-container">
+        <iframe id="mapFrame" src="about:blank"></iframe>
+      </div>
+    </div>
+
+    <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
+
+    <!-- Family Members Section -->
+    <div class="form-group">
+      <h3>Family Members (Optional Details)</h3>
+      <div id="familyContainer"></div>
+      <button type="button" class="btn-secondary" onclick="addFamilyMember()">+ Add Family Member</button>
+    </div>
+
+    <button type="submit" class="btn-submit">Save Contact</button>
+  </form>
+</div>
+
+<script>
+  let famCounter = 0;
+
+  function formatAadhaar(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length > 12) value = value.slice(0, 12);
+    input.value = value.match(/.{1,4}/g)?.join('-') || '';
+  }
+
+  function previewPhoto(event, imgId) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = e => document.getElementById(imgId).src = e.target.result;
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function updateMapEmbed(latId, lngId, frameId) {
+    const lat = document.getElementById(latId).value;
+    const lng = document.getElementById(lngId).value;
+    const frame = document.getElementById(frameId);
+    if (lat && lng) {
+      frame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+    }
+  }
+
+  function getCurrentLocation(latId, lngId, frameId) {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById(latId).value = pos.coords.latitude;
+        document.getElementById(lngId).value = pos.coords.longitude;
+        updateMapEmbed(latId, lngId, frameId);
+      }, () => alert("Unable to fetch location."));
+    }
+  }
+
+  function addFamilyMember(data = {}) {
+    famCounter++;
+    const id = famCounter;
+    const container = document.getElementById('familyContainer');
+    const card = document.createElement('div');
+    card.className = 'family-card';
+    card.id = `fam_card_${id}`;
+
+    card.innerHTML = `
+      <div class="family-card-header">
+        <strong>Family Member #${id}</strong>
+        <button type="button" class="btn-danger" onclick="document.getElementById('fam_card_${id}').remove()">Remove</button>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" class="fam-name" value="${data.name || ''}" placeholder="Name">
+        </div>
+        <div class="form-group">
+          <label>Relationship</label>
+          <select class="fam-relation">
+            <option value="Spouse" ${data.relation==='Spouse'?'selected':''}>Spouse</option>
+            <option value="Child" ${data.relation==='Child'?'selected':''}>Child</option>
+            <option value="Parent" ${data.relation==='Parent'?'selected':''}>Parent</option>
+            <option value="Sibling" ${data.relation==='Sibling'?'selected':''}>Sibling</option>
+            <option value="Other" ${data.relation==='Other'?'selected':''}>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" class="fam-phone" value="${data.phone || ''}" placeholder="Phone Number">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" class="fam-email" value="${data.email || ''}" placeholder="Email">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Photo</label>
+        <input type="file" accept="image/*" onchange="previewPhoto(event, 'fam_img_${id}')">
+        <img id="fam_img_${id}" class="photo-preview" src="${data.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}" alt="Preview">
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Aadhaar</label>
+          <input type="text" class="fam-aadhaar" value="${data.aadhaar || ''}" placeholder="XXXX-XXXX-XXXX" maxlength="14" oninput="formatAadhaar(this)">
+        </div>
+        <div class="form-group">
+          <label>PAN Card</label>
+          <input type="text" class="fam-pan" value="${data.pan || ''}" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>DIGIPIN</label>
+        <input type="text" class="fam-digipin" value="${data.digipin || ''}" placeholder="DIGIPIN">
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" step="any" id="fam_lat_${id}" class="fam-lat" value="${data.lat || ''}" onchange="updateMapEmbed('fam_lat_${id}', 'fam_lng_${id}', 'fam_map_${id}')">
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" step="any" id="fam_lng_${id}" class="fam-lng" value="${data.lng || ''}" onchange="updateMapEmbed('fam_lat_${id}', 'fam_lng_${id}', 'fam_map_${id}')">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="map-container">
+          <iframe id="fam_map_${id}" src="${data.lat && data.lng ? `https://maps.google.com/maps?q=${data.lat},${data.lng}&z=15&output=embed` : 'about:blank'}"></iframe>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  }
+
+  function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const familyMembers = [];
+    document.querySelectorAll('.family-card').forEach(card => {
+      familyMembers.push({
+        name: card.querySelector('.fam-name').value,
+        relation: card.querySelector('.fam-relation').value,
+        phone: card.querySelector('.fam-phone').value,
+        email: card.querySelector('.fam-email').value,
+        photo: card.querySelector('.photo-preview').src,
+        aadhaar: card.querySelector('.fam-aadhaar').value,
+        pan: card.querySelector('.fam-pan').value,
+        digipin: card.querySelector('.fam-digipin').value,
+        lat: card.querySelector('.fam-lat').value,
+        lng: card.querySelector('.fam-lng').value
+      });
+    });
+
+    const contactId = document.getElementById('contactId').value || 'id_' + Date.now();
+
+    const contactData = {
+      id: contactId,
+      fullName: document.getElementById('fullName').value,
+      phone: document.getElementById('phone').value,
+      email: document.getElementById('email').value,
+      photo: document.getElementById('photoPreview').src,
+      aadhaar: document.getElementById('aadhaar').value,
+      pan: document.getElementById('pan').value,
+      digipin: document.getElementById('digipin').value,
+      coordinates: {
+        lat: document.getElementById('latitude').value,
+        lng: document.getElementById('longitude').value
+      },
+      familyMembers: familyMembers
+    };
+
+    let contacts = JSON.parse(localStorage.getItem('saved_contacts') || '[]');
+    const existingIndex = contacts.findIndex(c => c.id === contactId);
+
+    if (existingIndex > -1) {
+      contacts[existingIndex] = contactData;
+    } else {
+      contacts.push(contactData);
+    }
+
+    localStorage.setItem('saved_contacts', JSON.stringify(contacts));
+    alert("Contact saved successfully!");
+    window.location.href = "home.html";
+  }
+
+  // Edit pre-population logic
+  document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+
+    if (id) {
+      const contacts = JSON.parse(localStorage.getItem('saved_contacts') || '[]');
+      const contact = contacts.find(c => c.id === id);
+
+      if (contact) {
+        document.getElementById('formTitle').innerText = 'Edit Contact';
+        document.getElementById('contactId').value = contact.id;
+        document.getElementById('fullName').value = contact.fullName || '';
+        document.getElementById('phone').value = contact.phone || '';
+        document.getElementById('email').value = contact.email || '';
+        document.getElementById('photoPreview').src = contact.photo || '';
+        document.getElementById('aadhaar').value = contact.aadhaar || '';
+        document.getElementById('pan').value = contact.pan || '';
+        document.getElementById('digipin').value = contact.digipin || '';
+
+        if (contact.coordinates) {
+          document.getElementById('latitude').value = contact.coordinates.lat || '';
+          document.getElementById('longitude').value = contact.coordinates.lng || '';
+          updateMapEmbed('latitude', 'longitude', 'mapFrame');
+        }
+
+        if (contact.familyMembers) {
+          contact.familyMembers.forEach(fam => addFamilyMember(fam));
+        }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
