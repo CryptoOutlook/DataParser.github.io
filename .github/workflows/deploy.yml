@@ -1,0 +1,28 @@
+name: Multi-Branch Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - contacts  # Replace with your second branch name
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Current Branch
+        uses: actions/checkout@v4
+
+      # OPTIONAL: Add build steps here if your project needs compilation 
+      # (e.g., npm run build). If it is plain HTML/JS, skip to deployment.
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: . # The folder containing your site files (e.g., 'dist' or '.')
+          target-folder: ${{ github.ref_name == 'main' && '/' || github.ref_name }}
+          branch: gh-pages # The destination branch for GitHub Pages
+          clean: false # CRITICAL: Prevents one branch from erasing the other
