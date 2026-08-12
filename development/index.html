@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analyser, Parser and Converter</title>
+    <!-- jsPDF & jsPDF AutoTable for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #059669;
+            --success-hover: #047857;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --border: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --excel-header: #f1f5f9;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        h2, h3 {
+            margin-top: 0;
+            color: var(--text-main);
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 13px;
+            box-sizing: border-box;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        button:hover { background-color: var(--primary-hover); }
+        button.success { background-color: var(--success); }
+        button.success:hover { background-color: var(--success-hover); }
+        button.secondary { background-color: #64748b; }
+        button.secondary:hover { background-color: #475569; }
+        button.danger { background-color: var(--danger); }
+        button.danger:hover { background-color: var(--danger-hover); }
+
+        /* History Table */
+        .history-section {
+            margin-top: 28px;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 20px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .history-table th, .history-table td {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .history-table th {
+            background: var(--excel-header);
+            font-weight: 600;
+        }
+
+        /* Banner */
+        .meta-banner {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Excel-like Table Styling */
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 650px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 12px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        }
+
+        .excel-table th {
+            position: sticky;
+            top: 0;
+            background: var(--excel-header);
+            border-bottom: 2px solid var(--border);
+            border-right: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+            font-weight: 700;
+            z-index: 10;
+            vertical-align: top;
+        }
+
+        .excel-table td {
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            background: #fff;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .excel-table tr:hover td {
+            background-color: #f1f5f9;
+        }
+
+        /* Completed / Struck Row Styling */
+        .record-group.completed td,
+        .stacked-card.completed {
+            background-color: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            text-decoration: line-through;
+        }
+
+        .record-group.completed button,
+        .stacked-card.completed button {
+            opacity: 0.6;
+        }
+
+        /* Stacked Multi-Line Row Card Layout */
+        .stacked-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 8px;
+        }
+
+        .stacked-card {
+            display: flex;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .stacked-side {
+            background: #f8fafc;
+            border-right: 1px solid var(--border);
+            padding: 12px;
+            min-width: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stacked-side .row-label {
+            font-weight: bold;
+            font-size: 13px;
+            color: var(--primary);
+        }
+
+        .stacked-content {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stacked-row-line {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .field-item {
+            flex: 1;
+            min-width: 200px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 4px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .field-label {
+            font-weight: bold;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-right: 6px;
+            text-transform: uppercase;
+        }
+
+        .field-val {
+            font-size: 12px;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        /* Header Dropdowns & Actions */
+        .header-title {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-main);
+            font-family: system-ui, sans-serif;
+        }
+
+        .header-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .header-filter {
+            width: 100%;
+            padding: 3px;
+            font-size: 11px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: white;
+            outline: none;
+        }
+
+        .btn-col-copy {
+            background: #e2e8f0;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 2px 4px;
+            font-size: 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: normal;
+        }
+
+        .btn-col-copy:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-copy-mini {
+            background: #e2e8f0;
+            color: var(--text-main);
+            border: none;
+            padding: 2px 6px;
+            font-size: 11px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+
+        .btn-copy-mini:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-copy-mini.copied {
+            background: var(--success) !important;
+            color: white !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HOME VIEW -->
+    <div id="homeView" class="view active">
+        <h2>Data Analyser, Parser and Converter</h2>
+        <textarea id="rawDataInput" placeholder="Paste Raw Text, CSV, or JSON data here..."></textarea>
+
+        <div class="action-bar">
+            <button onclick="convertData()">⚡ Convert Data</button>
+            <button class="secondary" onclick="document.getElementById('fileLoader').click()">📁 Load File (TXT, CSV, JSON)</button>
+            <input type="file" id="fileLoader" accept=".txt,.log,.csv,.json" style="display:none" onchange="loadFile(event)">
+            <button class="secondary" onclick="clearInput()">Clear Input</button>
+        </div>
+
+        <div class="history-section">
+            <h3>Previous Conversions History</h3>
+            <div id="historyContainer"></div>
+        </div>
+    </div>
+
+    <!-- CONVERTED DATA VIEW -->
+    <div id="convertedView" class="view">
+        <div class="action-bar" style="justify-content: space-between;">
+            <button class="secondary" onclick="showHomeView()">← Load New Data (Home)</button>
+            <div style="display:flex; gap:8px;">
+                <button class="secondary" onclick="toggleViewMode()">↔ View: <span id="viewModeLabel">Stacked Rows</span></button>
+                <button class="success" onclick="exportCSV()">📥 Save CSV</button>
+                <button class="success" onclick="exportJSON()">📥 Save JSON</button>
+                <button class="success" onclick="exportPDF()">📥 Save PDF</button>
+                <button class="secondary" onclick="resetFilters()">Reset Filters</button>
+            </div>
+        </div>
+
+        <div class="meta-banner">
+            <div>Value Date (Report Date): <span id="metaValueDate" style="color:var(--primary);">N/A</span></div>
+            <div>Prepared Date: <span id="metaPreparedDate">N/A</span></div>
+            <div>Records: <span id="metaTotalRecords">0</span></div>
+            <div>Total Credit: ₹<span id="metaCredit">0.00</span> | Total Debit: ₹<span id="metaDebit">0.00</span></div>
+        </div>
+
+        <!-- Single Line Table Display Container -->
+        <div class="table-wrapper" id="singleTableContainer">
+            <table class="excel-table" id="excelTable">
+                <thead>
+                    <tr id="tableHeaderRow"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Stacked Chunked Rows Display Container -->
+        <div id="stackedTableContainer" class="stacked-container" style="display: none;"></div>
+    </div>
+
+</div>
+
+<script>
+    let parsedRecords = [];
+    let activeRecords = [];
+    let extractedValueDate = "Report_Data";
+    let extractedPreparedDate = "N/A";
+    let isStackedView = false;
+
+    const COLUMNS = ["BO ID", "Sl No", "Type", "Account Number", "Scheme Code", "Tran ID", "Value Date", "Credit", "Debit", "Ref Num"];
+
+    document.addEventListener("DOMContentLoaded", renderHistory);
+
+    function showHomeView() {
+        document.getElementById("convertedView").classList.remove("active");
+        document.getElementById("homeView").classList.add("active");
+        renderHistory();
+    }
+
+    function showConvertedView() {
+        document.getElementById("homeView").classList.remove("active");
+        document.getElementById("convertedView").classList.add("active");
+    }
+
+    function clearInput() {
+        document.getElementById("rawDataInput").value = "";
+    }
+
+    function loadFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById("rawDataInput").value = e.target.result;
+            convertData();
+        };
+        reader.readAsText(file);
+    }
+
+    /* --- UNIVERSAL MULTI-FORMAT PARSER (Raw Text, CSV, JSON) --- */
+    function convertData() {
+        const rawText = document.getElementById("rawDataInput").value.trim();
+        if (!rawText) {
+            alert("Please paste or load data first.");
+            return;
+        }
+
+        extractedPreparedDate = extractPreparedDate(rawText);
+        parsedRecords = parseAnyFormat(rawText);
+
+        if (!parsedRecords || parsedRecords.length === 0) {
+            alert("Could not extract valid records. Please ensure file is valid Raw Report Text, CSV, or JSON.");
+            return;
+        }
+
+        extractedValueDate = parsedRecords[0]["Value Date"] || "Report_Data";
+
+        // Save to History
+        saveToHistory(rawText, extractedValueDate, extractedPreparedDate, parsedRecords.length);
+
+        activeRecords = [...parsedRecords];
+        document.getElementById("metaValueDate").textContent = extractedValueDate;
+        document.getElementById("metaPreparedDate").textContent = extractedPreparedDate;
+        
+        buildExcelTableHeaders();
+        renderDataViews(activeRecords);
+        showConvertedView();
+    }
+
+    function parseAnyFormat(text) {
+        // 1. TRY JSON PARSING
+        if (text.startsWith('[') || text.startsWith('{')) {
+            try {
+                const data = JSON.parse(text);
+                const arr = Array.isArray(data) ? data : [data];
+                if (arr.length > 0) {
+                    return arr.map((item, idx) => ({
+                        "BO ID": item["BO ID"] || "-",
+                        "Sl No": String(item["Sl No"] || (idx + 1)),
+                        "Type": item["Type"] || "-",
+                        "Account Number": item["Account Number"] || "-",
+                        "Scheme Code": item["Scheme Code"] || "-",
+                        "Tran ID": item["Tran ID"] || "-",
+                        "Value Date": item["Value Date"] || "-",
+                        "Credit": String(item["Credit"] || "0.00"),
+                        "Debit": String(item["Debit"] || "0.00"),
+                        "Ref Num": item["Ref Num"] || "-"
+                    }));
+                }
+            } catch (e) { /* Not valid JSON, proceed to CSV/Raw */ }
+        }
+
+        // 2. TRY CSV PARSING
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length > 1 && lines[0].includes(',')) {
+            const headers = parseCSVLine(lines[0]);
+            if (headers.includes("Account Number") || headers.includes("Sl No") || headers.includes("BO ID")) {
+                const records = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const vals = parseCSVLine(lines[i]);
+                    if (vals.length >= 3) {
+                        let rec = {};
+                        headers.forEach((h, idx) => {
+                            rec[h.trim()] = (vals[idx] || "").trim();
+                        });
+                        records.push({
+                            "BO ID": rec["BO ID"] || "-",
+                            "Sl No": String(rec["Sl No"] || i),
+                            "Type": rec["Type"] || "-",
+                            "Account Number": rec["Account Number"] || "-",
+                            "Scheme Code": rec["Scheme Code"] || "-",
+                            "Tran ID": rec["Tran ID"] || "-",
+                            "Value Date": rec["Value Date"] || "-",
+                            "Credit": String(rec["Credit"] || "0.00"),
+                            "Debit": String(rec["Debit"] || "0.00"),
+                            "Ref Num": rec["Ref Num"] || "-"
+                        });
+                    }
+                }
+                if (records.length > 0) return records;
+            }
+        }
+
+        // 3. FALLBACK TO RAW TEXT PARSING
+        return parseRawData(text);
+    }
+
+    function parseCSVLine(line) {
+        let result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            let char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(cur.replace(/^"|"$/g, '').trim());
+                cur = '';
+            } else {
+                cur += char;
+            }
+        }
+        result.push(cur.replace(/^"|"$/g, '').trim());
+        return result;
+    }
+
+    function extractPreparedDate(text) {
+        let match = text.match(/Prepared Date:\s*([0-9]{2}[\/-][0-9]{2}[\/-][0-9]{4}\s*[0-9:.]*)/i);
+        if (match && match[1]) return match[1].trim();
+        return "N/A (Imported File)";
+    }
+
+    function parseRawData(text) {
+        const lines = text.split('\n');
+        const stitchedLines = [];
+        let currentBoId = "MAIN_SO";
+
+        for (let line of lines) {
+            let trimmed = line.trim();
+            if (!trimmed) continue;
+
+            if (trimmed.startsWith("BO ID :")) {
+                const parts = trimmed.split(":");
+                if (parts[1]) currentBoId = parts[1].trim().split(" ")[0];
+                continue;
+            }
+
+            if (/^\d+\s+/.test(trimmed)) {
+                stitchedLines.push({ boId: currentBoId, lineText: trimmed });
+            } else if (
+                stitchedLines.length > 0 &&
+                !trimmed.startsWith("Page") &&
+                !trimmed.startsWith("Totals") &&
+                !trimmed.startsWith("Sl No") &&
+                !trimmed.startsWith("Long Book") &&
+                !trimmed.startsWith("Prepared") &&
+                !trimmed.startsWith("Sol ID")
+            ) {
+                stitchedLines[stitchedLines.length - 1].lineText += " " + trimmed;
+            }
+        }
+
+        const records = [];
+        for (let item of stitchedLines) {
+            const rec = parseRecordLine(item.lineText, item.boId);
+            if (rec) records.push(rec);
+        }
+        return records;
+    }
+
+    function parseRecordLine(line, boId) {
+        const tokens = line.trim().split(/\s+/);
+        if (tokens.length < 5 || !/^\d+$/.test(tokens[0])) return null;
+
+        let slNo = tokens[0];
+        let idx = 1;
+        let type = "-";
+
+        if (tokens[idx] === "AO") {
+            type = "AO";
+            idx++;
+        }
+
+        let accNo = tokens[idx++] || "";
+        let scheme = tokens[idx++] || "";
+        let tranId = tokens[idx++] || "";
+        let valueDate = tokens[idx++] || "";
+
+        let amountIndices = [];
+        for (let i = idx; i < tokens.length; i++) {
+            if (/^\d+\.\d{2}$/.test(tokens[i])) amountIndices.push(i);
+        }
+
+        let credit = "0.00";
+        let debit = "0.00";
+        let refParts = [];
+
+        if (amountIndices.length >= 2) {
+            credit = tokens[amountIndices[0]];
+            debit = tokens[amountIndices[1]];
+            for (let i = idx; i < tokens.length; i++) {
+                if (i !== amountIndices[0] && i !== amountIndices[1]) refParts.push(tokens[i]);
+            }
+        } else if (amountIndices.length === 1) {
+            credit = tokens[amountIndices[0]];
+            for (let i = idx; i < tokens.length; i++) {
+                if (i !== amountIndices[0]) refParts.push(tokens[i]);
+            }
+        } else {
+            for (let i = idx; i < tokens.length; i++) refParts.push(tokens[i]);
+        }
+
+        return {
+            "BO ID": boId,
+            "Sl No": slNo,
+            "Type": type,
+            "Account Number": accNo,
+            "Scheme Code": scheme,
+            "Tran ID": tranId,
+            "Value Date": valueDate,
+            "Credit": credit,
+            "Debit": debit,
+            "Ref Num": refParts.join(" ")
+        };
+    }
+
+    /* --- EXCEL TABLE & FILTERING --- */
+    function buildExcelTableHeaders() {
+        const headerRow = document.getElementById("tableHeaderRow");
+        headerRow.innerHTML = "";
+
+        const actionTh = document.createElement("th");
+        actionTh.innerHTML = `<span class="header-title">Actions</span>`;
+        headerRow.appendChild(actionTh);
+
+        COLUMNS.forEach(col => {
+            const th = document.createElement("th");
+            const uniqueVals = [...new Set(parsedRecords.map(r => r[col]))].sort();
+
+            let optionsHtml = `<option value="ALL">(All)</option>`;
+            uniqueVals.forEach(val => {
+                optionsHtml += `<option value="${escapeAttr(val)}">${val}</option>`;
+            });
+
+            th.innerHTML = `
+                <span class="header-title">${col}</span>
+                <div class="header-controls">
+                    <select class="header-filter" onchange="applyFilters()">
+                        ${optionsHtml}
+                    </select>
+                    <button class="btn-col-copy" onclick="copyColumnValues('${col}', this)">📋 Copy Column</button>
+                </div>
+            `;
+            headerRow.appendChild(th);
+        });
+    }
+
+    function applyFilters() {
+        const selects = document.querySelectorAll("#tableHeaderRow select");
+        activeRecords = parsedRecords.filter(record => {
+            let matches = true;
+            selects.forEach((select, index) => {
+                const colName = COLUMNS[index];
+                if (select.value !== "ALL" && record[colName] !== select.value) {
+                    matches = false;
+                }
+            });
+            return matches;
+        });
+        renderDataViews(activeRecords);
+    }
+
+    function resetFilters() {
+        const selects = document.querySelectorAll("#tableHeaderRow select");
+        selects.forEach(select => select.value = "ALL");
+        applyFilters();
+    }
+
+    function toggleViewMode() {
+        isStackedView = !isStackedView;
+        document.getElementById("viewModeLabel").textContent = isStackedView ? "Single Line Table" : "Stacked Rows";
+        
+        if (isStackedView) {
+            document.getElementById("singleTableContainer").style.display = "none";
+            document.getElementById("stackedTableContainer").style.display = "flex";
+        } else {
+            document.getElementById("singleTableContainer").style.display = "block";
+            document.getElementById("stackedTableContainer").style.display = "none";
+        }
+    }
+
+    function renderDataViews(records) {
+        renderSingleLineTable(records);
+        renderStackedRows(records);
+
+        let totalCredit = records.reduce((sum, r) => sum + (parseFloat(r["Credit"]) || 0), 0);
+        let totalDebit = records.reduce((sum, r) => sum + (parseFloat(r["Debit"]) || 0), 0);
+
+        document.getElementById("metaTotalRecords").textContent = records.length;
+        document.getElementById("metaCredit").textContent = totalCredit.toFixed(2);
+        document.getElementById("metaDebit").textContent = totalDebit.toFixed(2);
+    }
+
+    function renderSingleLineTable(records) {
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+
+        records.forEach((rec) => {
+            const tr = document.createElement("tr");
+            tr.className = "record-group";
+
+            const tdAction = document.createElement("td");
+            const checkBtn = document.createElement("button");
+            checkBtn.className = "btn-copy-mini";
+            checkBtn.textContent = "✓ Complete";
+            checkBtn.onclick = () => tr.classList.toggle("completed");
+            tdAction.appendChild(checkBtn);
+            tr.appendChild(tdAction);
+
+            COLUMNS.forEach(col => {
+                const td = document.createElement("td");
+                const val = rec[col] || "";
+                
+                const span = document.createElement("span");
+                span.textContent = val;
+                
+                const btn = document.createElement("button");
+                btn.className = "btn-copy-mini";
+                btn.textContent = "📋";
+                btn.onclick = () => copyText(val, btn);
+                
+                td.appendChild(span);
+                td.appendChild(btn);
+                tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderStackedRows(records) {
+        const container = document.getElementById("stackedTableContainer");
+        container.innerHTML = "";
+
+        const line1Cols = ["BO ID", "Sl No", "Type", "Account Number"];
+        const line2Cols = ["Scheme Code", "Tran ID", "Value Date"];
+        const line3Cols = ["Credit", "Debit", "Ref Num"];
+
+        records.forEach((rec, index) => {
+            const card = document.createElement("div");
+            card.className = "stacked-card";
+
+            const side = document.createElement("div");
+            side.className = "stacked-side";
+            
+            const label = document.createElement("div");
+            label.className = "row-label";
+            label.textContent = `Row #${index + 1}`;
+
+            const completeBtn = document.createElement("button");
+            completeBtn.className = "btn-copy-mini";
+            completeBtn.textContent = "✓ Rule Out";
+            completeBtn.onclick = () => card.classList.toggle("completed");
+
+            side.appendChild(label);
+            side.appendChild(completeBtn);
+
+            const content = document.createElement("div");
+            content.className = "stacked-content";
+
+            content.appendChild(createStackedLine(line1Cols, rec));
+            content.appendChild(createStackedLine(line2Cols, rec));
+            content.appendChild(createStackedLine(line3Cols, rec));
+
+            card.appendChild(side);
+            card.appendChild(content);
+            container.appendChild(card);
+        });
+    }
+
+    function createStackedLine(cols, record) {
+        const line = document.createElement("div");
+        line.className = "stacked-row-line";
+
+        cols.forEach(col => {
+            const val = record[col] || "";
+            const item = document.createElement("div");
+            item.className = "field-item";
+
+            item.innerHTML = `
+                <div>
+                    <span class="field-label">${col}:</span>
+                    <span class="field-val">${val}</span>
+                </div>
+            `;
+
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "btn-copy-mini";
+            copyBtn.textContent = "📋";
+            copyBtn.onclick = () => copyText(val, copyBtn);
+
+            item.appendChild(copyBtn);
+            line.appendChild(item);
+        });
+
+        return line;
+    }
+
+    function copyColumnValues(colName, btnEl) {
+        const colValues = activeRecords.map(r => r[colName] || "").join("\n");
+        copyText(colValues, btnEl);
+    }
+
+    /* --- HISTORY MANAGEMENT --- */
+    function saveToHistory(rawText, valueDate, preparedDate, recordCount) {
+        let history = JSON.parse(localStorage.getItem("data_analyzer_history_v1") || "[]");
+        const newEntry = {
+            id: Date.now(),
+            timestamp: new Date().toLocaleString(),
+            valueDate: valueDate,
+            preparedDate: preparedDate,
+            recordCount: recordCount,
+            rawText: rawText
+        };
+        history.unshift(newEntry);
+        history = history.slice(0, 10);
+        localStorage.setItem("data_analyzer_history_v1", JSON.stringify(history));
+    }
+
+    function renderHistory() {
+        const container = document.getElementById("historyContainer");
+        const history = JSON.parse(localStorage.getItem("data_analyzer_history_v1") || "[]");
+
+        if (history.length === 0) {
+            container.innerHTML = `<div class="empty-state">No previous history found.</div>`;
+            return;
+        }
+
+        let html = `
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Saved Time</th>
+                        <th>Value Date (Report)</th>
+                        <th>Prepared Date</th>
+                        <th>Records</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        history.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.timestamp}</td>
+                    <td><b style="color:var(--primary);">${item.valueDate}</b></td>
+                    <td>${item.preparedDate}</td>
+                    <td>${item.recordCount} records</td>
+                    <td>
+                        <button onclick="loadHistoryItem(${item.id})">Load</button>
+                        <button class="danger" onclick="deleteHistoryItem(${item.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+
+    function loadHistoryItem(id) {
+        const history = JSON.parse(localStorage.getItem("data_analyzer_history_v1") || "[]");
+        const item = history.find(h => h.id === id);
+        if (item) {
+            document.getElementById("rawDataInput").value = item.rawText;
+            convertData();
+        }
+    }
+
+    function deleteHistoryItem(id) {
+        let history = JSON.parse(localStorage.getItem("data_analyzer_history_v1") || "[]");
+        history = history.filter(h => h.id !== id);
+        localStorage.setItem("data_analyzer_history_v1", JSON.stringify(history));
+        renderHistory();
+    }
+
+    /* --- EXPORTS --- */
+    function exportCSV() {
+        let csv = COLUMNS.join(",") + "\n";
+        activeRecords.forEach(r => {
+            const row = COLUMNS.map(col => `"${(r[col] || "").replace(/"/g, '""')}"`);
+            csv += row.join(",") + "\n";
+        });
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        triggerDownload(blob, `${extractedValueDate}.csv`);
+    }
+
+    function exportJSON() {
+        const jsonStr = JSON.stringify(activeRecords, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        triggerDownload(blob, `${extractedValueDate}.json`);
+    }
+
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("landscape");
+        doc.setFontSize(14);
+        doc.text(`Detailed Report - Value Date: ${extractedValueDate}`, 14, 15);
+
+        const tableRows = activeRecords.map(r => COLUMNS.map(col => r[col] || ""));
+
+        doc.autoTable({
+            head: [COLUMNS],
+            body: tableRows,
+            startY: 22,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [37, 99, 235] }
+        });
+
+        doc.save(`${extractedValueDate}.pdf`);
+    }
+
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    /* --- UTILS --- */
+    function copyText(text, btnEl) {
+        navigator.clipboard.writeText(text).then(() => {
+            const orig = btnEl.textContent;
+            btnEl.textContent = "✓";
+            btnEl.classList.add("copied");
+            setTimeout(() => {
+                btnEl.textContent = orig;
+                btnEl.classList.remove("copied");
+            }, 1200);
+        });
+    }
+
+    function escapeAttr(str) {
+        return String(str).replace(/"/g, '&quot;');
+    }
+</script>
+
+</body>
+</html>
