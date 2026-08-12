@@ -45,33 +45,49 @@
       font-size: 0.9rem;
     }
 
-    .input-copy-wrap {
+    /* Embedded Copy Button Wrappers */
+    .input-wrapper {
+      position: relative;
       display: flex;
-      gap: 6px;
+      align-items: center;
+      width: 100%;
     }
 
     input, select, textarea {
       width: 100%;
       padding: 10px;
+      padding-right: 36px; /* Space reserved for inside copy icon */
       border: 1px solid var(--border);
       border-radius: 6px;
       box-sizing: border-box;
       font-size: 0.95rem;
+      background: #ffffff;
     }
 
-    .btn-copy {
-      background: #e2e8f0;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0 12px;
+    textarea {
+      resize: vertical;
+    }
+
+    .btn-copy-inside {
+      position: absolute;
+      right: 6px;
+      background: transparent;
+      border: none;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.85rem;
+      color: #64748b;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .btn-copy:hover { background: #cbd5e1; }
+    .btn-copy-inside:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
 
     .row { display: flex; gap: 12px; }
     .row .form-group { flex: 1; }
@@ -85,6 +101,17 @@
       color: #0369a1;
       margin-top: -6px;
       margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .quick-paste-box {
+      background: #f1f5f9;
+      border: 1px dashed var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 14px;
     }
 
     .photo-preview {
@@ -161,9 +188,9 @@
     <!-- Photo Section -->
     <div class="form-group">
       <label for="photoInput">Profile Photo</label>
-      <div class="input-copy-wrap">
+      <div class="input-wrapper">
         <input type="file" id="photoInput" class="photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'photoPreview')">
-        <button type="button" class="btn-copy" onclick="copyFieldValue('photoPreview', true)" title="Copy Photo Base64 Data">📋</button>
+        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('photoPreview', true)" title="Copy Photo Base64 Data">📋</button>
       </div>
       <img id="photoPreview" class="photo-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>">
     </div>
@@ -172,47 +199,47 @@
     <div class="row">
       <div class="form-group">
         <label for="firstName">First Name *</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="text" id="firstName" required placeholder="Name" oninput="updateNamePreview()">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('firstName')" title="Copy First Name">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('firstName')" title="Copy First Name">📋</button>
         </div>
       </div>
       <div class="form-group">
         <label for="middleName">Middle Name</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="text" id="middleName" placeholder="Middle Name" oninput="updateNamePreview()">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('middleName')" title="Copy Middle Name">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('middleName')" title="Copy Middle Name">📋</button>
         </div>
       </div>
       <div class="form-group">
         <label for="lastName">Last Name / Surname</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="text" id="lastName" placeholder="Surname" oninput="updateNamePreview()">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('lastName')" title="Copy Last Name">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('lastName')" title="Copy Last Name">📋</button>
         </div>
       </div>
     </div>
 
     <!-- Live Full Name Preview -->
     <div class="preview-box">
-      Full Name Preview: <span id="fullNamePreview">Name</span>
-      <button type="button" class="btn-copy" style="float:right; padding:2px 8px; font-size:0.8rem;" onclick="copyText(document.getElementById('fullNamePreview').innerText)" title="Copy Full Name">📋 Copy</button>
+      <span>Full Name Preview: <strong id="fullNamePreview">Name</strong></span>
+      <button type="button" class="btn-copy-inside" style="position:static;" onclick="copyText(document.getElementById('fullNamePreview').innerText)" title="Copy Full Name">📋 Copy</button>
     </div>
 
     <!-- Contact Info -->
     <div class="row">
       <div class="form-group">
         <label for="phone">Phone Number *</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="tel" id="phone" required placeholder="+91 9876543210">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('phone')" title="Copy Phone">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('phone')" title="Copy Phone">📋</button>
         </div>
       </div>
       <div class="form-group">
         <label for="email">Email Address</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="email" id="email" placeholder="example@mail.com">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('email')" title="Copy Email">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('email')" title="Copy Email">📋</button>
         </div>
       </div>
     </div>
@@ -220,23 +247,23 @@
     <!-- Present & Permanent Address -->
     <div class="form-group">
       <label for="presentAddress">Present Address</label>
-      <div class="input-copy-wrap">
+      <div class="input-wrapper">
         <textarea id="presentAddress" rows="2" placeholder="Street, City, State, Pincode"></textarea>
-        <button type="button" class="btn-copy" onclick="copyFieldValue('presentAddress')" title="Copy Present Address">📋</button>
+        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('presentAddress')" title="Copy Present Address">📋</button>
       </div>
     </div>
 
     <div class="form-group">
-      <label>
+      <label style="font-weight: normal; cursor: pointer;">
         <input type="checkbox" id="sameAddressCheck" onchange="toggleSameAddress(this)" style="width:auto;"> Permanent Address is same as Present Address
       </label>
     </div>
 
     <div class="form-group">
       <label for="permanentAddress">Permanent Address</label>
-      <div class="input-copy-wrap">
+      <div class="input-wrapper">
         <textarea id="permanentAddress" rows="2" placeholder="Street, City, State, Pincode"></textarea>
-        <button type="button" class="btn-copy" onclick="copyFieldValue('permanentAddress')" title="Copy Permanent Address">📋</button>
+        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('permanentAddress')" title="Copy Permanent Address">📋</button>
       </div>
     </div>
 
@@ -244,43 +271,51 @@
     <div class="row">
       <div class="form-group">
         <label for="aadhaar">Aadhaar Number</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="text" id="aadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14" oninput="formatAadhaar(this)">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('aadhaar')" title="Copy Aadhaar">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('aadhaar')" title="Copy Aadhaar">📋</button>
         </div>
       </div>
       <div class="form-group">
         <label for="pan">PAN Card Number</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('pan')" title="Copy PAN">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('pan')" title="Copy PAN">📋</button>
         </div>
       </div>
     </div>
 
-    <!-- Map & Location -->
+    <!-- Map & Location Section -->
+    <div class="quick-paste-box">
+      <label for="quickCoords" style="color: var(--primary);">Quick Paste Google Maps Coordinates (Lat, Long)</label>
+      <div class="input-wrapper">
+        <input type="text" id="quickCoords" placeholder="e.g. 28.6139, 77.2090" oninput="parseQuickCoords(this, 'latitude', 'longitude', 'digipin', 'mapFrame')">
+        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('quickCoords')" title="Copy Raw Coordinates">📋</button>
+      </div>
+    </div>
+
     <div class="row">
       <div class="form-group">
         <label for="latitude">Latitude</label>
-        <div class="input-copy-wrap">
-          <input type="number" step="any" id="latitude" placeholder="28.6139" onchange="syncLocation('latitude', 'longitude', 'digipin', 'mapFrame')">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('latitude')" title="Copy Latitude">📋</button>
+        <div class="input-wrapper">
+          <input type="text" id="latitude" placeholder="28.6139" oninput="handleCoordInput(this, 'longitude', 'digipin', 'mapFrame')">
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('latitude')" title="Copy Latitude">📋</button>
         </div>
       </div>
       <div class="form-group">
         <label for="longitude">Longitude</label>
-        <div class="input-copy-wrap">
-          <input type="number" step="any" id="longitude" placeholder="77.2090" onchange="syncLocation('latitude', 'longitude', 'digipin', 'mapFrame')">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('longitude')" title="Copy Longitude">📋</button>
+        <div class="input-wrapper">
+          <input type="text" id="longitude" placeholder="77.2090" oninput="handleCoordInput(this, 'latitude', 'digipin', 'mapFrame')">
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('longitude')" title="Copy Longitude">📋</button>
         </div>
       </div>
     </div>
 
     <div class="form-group">
       <label for="digipin">DIGIPIN (Auto-generated)</label>
-      <div class="input-copy-wrap">
+      <div class="input-wrapper">
         <input type="text" id="digipin" placeholder="e.g. 3J8-2K1-L09" onchange="syncDigipin('digipin', 'latitude', 'longitude', 'mapFrame')">
-        <button type="button" class="btn-copy" onclick="copyFieldValue('digipin')" title="Copy DIGIPIN">📋</button>
+        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('digipin')" title="Copy DIGIPIN">📋</button>
       </div>
     </div>
 
@@ -354,8 +389,34 @@
     return { lat: ((minLat + maxLat) / 2).toFixed(6), lng: ((minLng + maxLng) / 2).toFixed(6) };
   }
 
+  // Google Maps Coordinates Split Logic
+  function parseQuickCoords(inputEl, latId, lngId, digipinId, frameId) {
+    const val = inputEl.value.trim();
+    if (val.includes(',')) {
+      const parts = val.split(',');
+      if (parts.length >= 2) {
+        document.getElementById(latId).value = parts[0].trim();
+        document.getElementById(lngId).value = parts[1].trim();
+        syncLocation(latId, lngId, digipinId, frameId);
+      }
+    }
+  }
+
+  function handleCoordInput(currentEl, otherId, digipinId, frameId) {
+    const val = currentEl.value.trim();
+    if (val.includes(',')) {
+      const parts = val.split(',');
+      currentEl.value = parts[0].trim();
+      document.getElementById(otherId).value = parts[1].trim();
+    }
+    const latId = currentEl.id === 'latitude' ? currentEl.id : otherId;
+    const lngId = currentEl.id === 'longitude' ? currentEl.id : otherId;
+    syncLocation(latId, lngId, digipinId, frameId);
+  }
+
   function syncLocation(latId, lngId, digipinId, frameId) {
-    const lat = document.getElementById(latId).value, lng = document.getElementById(lngId).value;
+    const lat = document.getElementById(latId).value;
+    const lng = document.getElementById(lngId).value;
     if (lat && lng) {
       document.getElementById(digipinId).value = latLngToDigipin(lat, lng);
       document.getElementById(frameId).src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
@@ -449,9 +510,9 @@
       <div class="row">
         <div class="form-group">
           <label>Name</label>
-          <div class="input-copy-wrap">
+          <div class="input-wrapper">
             <input type="text" id="fam_name_${id}" class="fam-name" value="${data.name || ''}" placeholder="Name">
-            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_name_${id}')">📋</button>
+            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_name_${id}')">📋</button>
           </div>
         </div>
         <div class="form-group"><label>Relation</label>
@@ -463,46 +524,46 @@
       <div class="row">
         <div class="form-group">
           <label>Phone</label>
-          <div class="input-copy-wrap">
+          <div class="input-wrapper">
             <input type="tel" id="fam_phone_${id}" class="fam-phone" value="${data.phone || ''}">
-            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_phone_${id}')">📋</button>
+            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_phone_${id}')">📋</button>
           </div>
         </div>
         <div class="form-group">
           <label>Email</label>
-          <div class="input-copy-wrap">
+          <div class="input-wrapper">
             <input type="email" id="fam_email_${id}" class="fam-email" value="${data.email || ''}">
-            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_email_${id}')">📋</button>
+            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_email_${id}')">📋</button>
           </div>
         </div>
       </div>
       <div class="form-group">
         <label>Photo</label>
-        <div class="input-copy-wrap">
+        <div class="input-wrapper">
           <input type="file" class="fam-photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'fam_img_${id}')">
-          <button type="button" class="btn-copy" onclick="copyFieldValue('fam_img_${id}', true)">📋</button>
+          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_img_${id}', true)">📋</button>
         </div>
         <img id="fam_img_${id}" class="photo-preview" src="${data.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}">
       </div>
       <div class="row">
         <div class="form-group">
           <label>Aadhaar</label>
-          <div class="input-copy-wrap">
+          <div class="input-wrapper">
             <input type="text" id="fam_aadhaar_${id}" class="fam-aadhaar" value="${data.aadhaar || ''}" oninput="formatAadhaar(this)">
-            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_aadhaar_${id}')">📋</button>
+            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_aadhaar_${id}')">📋</button>
           </div>
         </div>
         <div class="form-group">
           <label>PAN</label>
-          <div class="input-copy-wrap">
+          <div class="input-wrapper">
             <input type="text" id="fam_pan_${id}" class="fam-pan" value="${data.pan || ''}">
-            <button type="button" class="btn-copy" onclick="copyFieldValue('fam_pan_${id}')">📋</button>
+            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_pan_${id}')">📋</button>
           </div>
         </div>
       </div>
       <div class="row">
-        <div class="form-group"><label>Latitude</label><input type="number" step="any" id="fam_lat_${id}" class="fam-lat" value="${data.lat || ''}" onchange="syncLocation('fam_lat_${id}', 'fam_lng_${id}', 'fam_digi_${id}', 'fam_map_${id}')"></div>
-        <div class="form-group"><label>Longitude</label><input type="number" step="any" id="fam_lng_${id}" class="fam-lng" value="${data.lng || ''}" onchange="syncLocation('fam_lat_${id}', 'fam_lng_${id}', 'fam_digi_${id}', 'fam_map_${id}')"></div>
+        <div class="form-group"><label>Latitude</label><input type="text" id="fam_lat_${id}" class="fam-lat" value="${data.lat || ''}" oninput="handleCoordInput(this, 'fam_lng_${id}', 'fam_digi_${id}', 'fam_map_${id}')"></div>
+        <div class="form-group"><label>Longitude</label><input type="text" id="fam_lng_${id}" class="fam-lng" value="${data.lng || ''}" oninput="handleCoordInput(this, 'fam_lat_${id}', 'fam_digi_${id}', 'fam_map_${id}')"></div>
       </div>
       <div class="form-group"><label>DIGIPIN</label><input type="text" id="fam_digi_${id}" class="fam-digipin" value="${data.digipin || ''}" onchange="syncDigipin('fam_digi_${id}', 'fam_lat_${id}', 'fam_lng_${id}', 'fam_map_${id}')"></div>
       <div class="map-container"><iframe id="fam_map_${id}" src="about:blank"></iframe></div>
@@ -617,6 +678,9 @@
         if (c.coordinates) {
           document.getElementById('latitude').value = c.coordinates.lat || '';
           document.getElementById('longitude').value = c.coordinates.lng || '';
+          if (c.coordinates.lat && c.coordinates.lng) {
+            document.getElementById('quickCoords').value = `${c.coordinates.lat}, ${c.coordinates.lng}`;
+          }
           syncLocation('latitude', 'longitude', 'digipin', 'mapFrame');
         }
 
