@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Save Contact Form</title>
+  <title>Contacts Directory</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -11,6 +11,7 @@
       --card-bg: #ffffff;
       --border: #cbd5e1;
       --text: #0f172a;
+      --danger: #ef4444;
       --success: #10b981;
     }
 
@@ -19,609 +20,191 @@
       background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 20px;
+      padding: 24px;
     }
 
     .container {
-      max-width: 780px;
+      max-width: 1000px;
       margin: 0 auto;
-      background: var(--card-bg);
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
-    .top-nav { margin-bottom: 16px; }
-    .top-nav a { color: var(--primary); text-decoration: none; font-weight: 600; }
-
-    h2, h3 { margin-top: 0; color: var(--primary); }
-
-    .form-group { margin-bottom: 16px; }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-      font-size: 0.9rem;
-    }
-
-    /* Embedded Copy Button Wrappers */
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      padding-right: 36px; /* Space reserved for inside copy icon */
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 0.95rem;
-      background: #ffffff;
-    }
-
-    textarea {
-      resize: vertical;
-    }
-
-    .btn-copy-inside {
-      position: absolute;
-      right: 6px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 0.85rem;
-      color: #64748b;
-      padding: 4px 6px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .btn-copy-inside:hover {
-      background: #e2e8f0;
-      color: #0f172a;
-    }
-
-    .row { display: flex; gap: 12px; }
-    .row .form-group { flex: 1; }
-
-    .preview-box {
-      background: #e0f2fe;
-      border: 1px solid #7dd3fc;
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-weight: 600;
-      color: #0369a1;
-      margin-top: -6px;
-      margin-bottom: 16px;
+    .header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 16px;
     }
 
-    .quick-paste-box {
-      background: #f1f5f9;
-      border: 1px dashed var(--border);
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 14px;
-    }
+    h1 { margin: 0; color: var(--primary); }
 
-    .photo-preview {
-      width: 85px;
-      height: 85px;
-      border-radius: 50%;
-      border: 2px dashed var(--border);
-      object-fit: cover;
-      display: block;
-      margin-top: 8px;
-    }
-
-    .map-container {
-      width: 100%;
-      height: 180px;
-      background: #e2e8f0;
-      border-radius: 6px;
-      overflow: hidden;
-      margin-top: 8px;
-    }
-
-    iframe { width: 100%; height: 100%; border: 0; }
-
-    .family-card {
-      border: 1px solid var(--border);
-      background: #f1f5f9;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
-
-    .family-card-header {
+    .btn-group {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    button {
+    .btn {
       background-color: var(--primary);
       color: white;
       border: none;
-      padding: 10px 16px;
+      padding: 8px 14px;
       border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .btn-secondary { background-color: #64748b; }
     .btn-success { background-color: var(--success); }
-    .btn-danger { background-color: #ef4444; }
-    .btn-submit { width: 100%; padding: 12px; font-size: 1rem; margin-top: 16px; }
+    .btn-danger { background-color: var(--danger); }
+    .btn:hover { opacity: 0.9; }
 
-    .action-bar {
+    .search-box {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+
+    .contacts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .contact-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e2e8f0;
+      border: 1px solid var(--border);
+    }
+
+    .contact-name { font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+    .details-list {
+      font-size: 0.88rem;
+      color: #475569;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .details-list li {
+      margin-bottom: 8px;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field-label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .field-value-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: #e2e8f0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 2px 6px;
+      font-size: 0.8rem;
+    }
+
+    .card-actions {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #f1f5f9;
     }
+
+    .empty-state { text-align: center; padding: 40px; color: #64748b; grid-column: 1 / -1; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="top-nav">
-    <a href="home.html">← Back to Contacts</a>
+  <div class="header-bar">
+    <h1>Contacts Directory</h1>
+    <a href="form.html" class="btn">+ Add Contact</a>
   </div>
 
-  <h2 id="formTitle">Contact Entry Form</h2>
-  <form id="contactForm" onsubmit="handleFormSubmit(event)">
-    <input type="hidden" id="contactId">
-    
-    <!-- Photo Section -->
-    <div class="form-group">
-      <label for="photoInput">Profile Photo</label>
-      <div class="input-wrapper">
-        <input type="file" id="photoInput" class="photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'photoPreview')">
-        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('photoPreview', true)" title="Copy Photo Base64 Data">📋</button>
-      </div>
-      <img id="photoPreview" class="photo-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>">
+  <div class="header-bar" style="margin-bottom:16px;">
+    <div class="btn-group">
+      <button class="btn btn-success" onclick="downloadJSON()">Save as JSON</button>
+      <button class="btn btn-secondary" onclick="copyJSON()">Copy as JSON</button>
+      <button class="btn btn-success" onclick="downloadCSV()">Save as CSV</button>
+      <button class="btn btn-secondary" onclick="copyCSV()">Copy as CSV</button>
     </div>
+  </div>
 
-    <!-- Name Breakdown -->
-    <div class="row">
-      <div class="form-group">
-        <label for="firstName">First Name *</label>
-        <div class="input-wrapper">
-          <input type="text" id="firstName" required placeholder="Name" oninput="updateNamePreview()">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('firstName')" title="Copy First Name">📋</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="middleName">Middle Name</label>
-        <div class="input-wrapper">
-          <input type="text" id="middleName" placeholder="Middle Name" oninput="updateNamePreview()">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('middleName')" title="Copy Middle Name">📋</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="lastName">Last Name / Surname</label>
-        <div class="input-wrapper">
-          <input type="text" id="lastName" placeholder="Surname" oninput="updateNamePreview()">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('lastName')" title="Copy Last Name">📋</button>
-        </div>
-      </div>
-    </div>
+  <input type="text" id="searchInput" class="search-box" placeholder="Search contacts..." oninput="renderContacts()">
 
-    <!-- Live Full Name Preview -->
-    <div class="preview-box">
-      <span>Full Name Preview: <strong id="fullNamePreview">Name</strong></span>
-      <button type="button" class="btn-copy-inside" style="position:static;" onclick="copyText(document.getElementById('fullNamePreview').innerText)" title="Copy Full Name">📋 Copy</button>
-    </div>
-
-    <!-- Contact Info -->
-    <div class="row">
-      <div class="form-group">
-        <label for="phone">Phone Number *</label>
-        <div class="input-wrapper">
-          <input type="tel" id="phone" required placeholder="+91 9876543210">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('phone')" title="Copy Phone">📋</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="email">Email Address</label>
-        <div class="input-wrapper">
-          <input type="email" id="email" placeholder="example@mail.com">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('email')" title="Copy Email">📋</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Present & Permanent Address -->
-    <div class="form-group">
-      <label for="presentAddress">Present Address</label>
-      <div class="input-wrapper">
-        <textarea id="presentAddress" rows="2" placeholder="Street, City, State, Pincode"></textarea>
-        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('presentAddress')" title="Copy Present Address">📋</button>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label style="font-weight: normal; cursor: pointer;">
-        <input type="checkbox" id="sameAddressCheck" onchange="toggleSameAddress(this)" style="width:auto;"> Permanent Address is same as Present Address
-      </label>
-    </div>
-
-    <div class="form-group">
-      <label for="permanentAddress">Permanent Address</label>
-      <div class="input-wrapper">
-        <textarea id="permanentAddress" rows="2" placeholder="Street, City, State, Pincode"></textarea>
-        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('permanentAddress')" title="Copy Permanent Address">📋</button>
-      </div>
-    </div>
-
-    <!-- Identity Numbers -->
-    <div class="row">
-      <div class="form-group">
-        <label for="aadhaar">Aadhaar Number</label>
-        <div class="input-wrapper">
-          <input type="text" id="aadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14" oninput="formatAadhaar(this)">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('aadhaar')" title="Copy Aadhaar">📋</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="pan">PAN Card Number</label>
-        <div class="input-wrapper">
-          <input type="text" id="pan" placeholder="ABCDE1234F" maxlength="10" style="text-transform: uppercase;">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('pan')" title="Copy PAN">📋</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Map & Location Section -->
-    <div class="quick-paste-box">
-      <label for="quickCoords" style="color: var(--primary);">Quick Paste Google Maps Coordinates (Lat, Long)</label>
-      <div class="input-wrapper">
-        <input type="text" id="quickCoords" placeholder="e.g. 28.6139, 77.2090" oninput="parseQuickCoords(this, 'latitude', 'longitude', 'digipin', 'mapFrame')">
-        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('quickCoords')" title="Copy Raw Coordinates">📋</button>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="form-group">
-        <label for="latitude">Latitude</label>
-        <div class="input-wrapper">
-          <input type="text" id="latitude" placeholder="28.6139" oninput="handleCoordInput(this, 'longitude', 'digipin', 'mapFrame')">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('latitude')" title="Copy Latitude">📋</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="longitude">Longitude</label>
-        <div class="input-wrapper">
-          <input type="text" id="longitude" placeholder="77.2090" oninput="handleCoordInput(this, 'latitude', 'digipin', 'mapFrame')">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('longitude')" title="Copy Longitude">📋</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="digipin">DIGIPIN (Auto-generated)</label>
-      <div class="input-wrapper">
-        <input type="text" id="digipin" placeholder="e.g. 3J8-2K1-L09" onchange="syncDigipin('digipin', 'latitude', 'longitude', 'mapFrame')">
-        <button type="button" class="btn-copy-inside" onclick="copyFieldValue('digipin')" title="Copy DIGIPIN">📋</button>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <button type="button" class="btn-secondary" onclick="getCurrentLocation('latitude', 'longitude', 'digipin', 'mapFrame')">Get Current Location</button>
-    </div>
-
-    <div class="form-group">
-      <label>Location Preview</label>
-      <div class="map-container">
-        <iframe id="mapFrame" src="about:blank"></iframe>
-      </div>
-    </div>
-
-    <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--border);">
-
-    <!-- Dynamic Family Members -->
-    <div class="form-group">
-      <h3>Family Members (Optional)</h3>
-      <div id="familyContainer"></div>
-      <button type="button" class="btn-secondary" onclick="addFamilyMember()">+ Add Family Member</button>
-    </div>
-
-    <button type="submit" class="btn-submit">Save Contact to Browser</button>
-
-    <div class="action-bar">
-      <button type="button" class="btn-success" onclick="exportSingle('json')">Save as JSON</button>
-      <button type="button" class="btn-secondary" onclick="copySingle('json')">Copy as JSON</button>
-      <button type="button" class="btn-success" onclick="exportSingle('csv')">Save as CSV</button>
-      <button type="button" class="btn-secondary" onclick="copySingle('csv')">Copy as CSV</button>
-    </div>
-  </form>
+  <div class="contacts-grid" id="contactsGrid"></div>
 </div>
 
 <script>
-  // DIGIPIN Engine
-  const DIGIPIN_GRID = [['2','3','4','5'],['6','7','8','9'],['C','J','K','L'],['M','P','T','W']];
-  const BOUNDS = { minLat: 2.0, maxLat: 38.0, minLng: 60.0, maxLng: 100.0 };
+  function getContacts() {
+    return JSON.parse(localStorage.getItem('saved_contacts') || '[]');
+  }
 
-  function latLngToDigipin(lat, lng) {
-    lat = parseFloat(lat); lng = parseFloat(lng);
-    if (isNaN(lat) || isNaN(lng) || lat < BOUNDS.minLat || lat > BOUNDS.maxLat || lng < BOUNDS.minLng || lng > BOUNDS.maxLng) return '';
-    let minLat = BOUNDS.minLat, maxLat = BOUNDS.maxLat, minLng = BOUNDS.minLng, maxLng = BOUNDS.maxLng, code = '';
-    for (let i = 0; i < 10; i++) {
-      let latStep = (maxLat - minLat) / 4, lngStep = (maxLng - minLng) / 4;
-      let col = Math.max(0, Math.min(3, Math.floor((lng - minLng) / lngStep)));
-      let row = Math.max(0, Math.min(3, Math.floor((maxLat - lat) / latStep)));
-      code += DIGIPIN_GRID[row][col];
-      maxLat -= row * latStep; minLat = maxLat - latStep;
-      minLng += col * lngStep; maxLng = minLng + lngStep;
+  function maskText(val, type) {
+    if (!val) return 'N/A';
+    if (type === 'aadhaar') return 'XXXX-XXXX-' + (val.replace(/\D/g, '').slice(-4) || 'XXXX');
+    if (type === 'pan') return 'XXXXX' + (val.slice(-4) || 'XXXX');
+    if (type === 'email') {
+      const parts = val.split('@');
+      return parts[0].slice(0, 2) + '••••@' + (parts[1] || '');
     }
-    return `${code.slice(0, 3)}-${code.slice(3, 6)}-${code.slice(6)}`;
+    return '••••••••';
   }
 
-  function digipinToLatLng(code) {
-    let clean = (code || '').replace(/[^2-9C-WC-wj-wj-w]/gi, '').toUpperCase();
-    if (clean.length !== 10) return null;
-    let minLat = BOUNDS.minLat, maxLat = BOUNDS.maxLat, minLng = BOUNDS.minLng, maxLng = BOUNDS.maxLng;
-    for (let char of clean) {
-      let r = -1, c = -1;
-      for (let i = 0; i < 4; i++) {
-        for (let j = 0; j < 4; j++) { if (DIGIPIN_GRID[i][j] === char) { r = i; c = j; break; } }
-      }
-      if (r === -1) return null;
-      let latStep = (maxLat - minLat) / 4, lngStep = (maxLng - minLng) / 4;
-      let newMaxLat = maxLat - r * latStep;
-      minLat = newMaxLat - latStep; maxLat = newMaxLat;
-      let newMinLng = minLng + c * lngStep;
-      minLng = newMinLng; maxLng = newMinLng + lngStep;
-    }
-    return { lat: ((minLat + maxLat) / 2).toFixed(6), lng: ((minLng + maxLng) / 2).toFixed(6) };
-  }
-
-  // Google Maps Coordinates Split Logic
-  function parseQuickCoords(inputEl, latId, lngId, digipinId, frameId) {
-    const val = inputEl.value.trim();
-    if (val.includes(',')) {
-      const parts = val.split(',');
-      if (parts.length >= 2) {
-        document.getElementById(latId).value = parts[0].trim();
-        document.getElementById(lngId).value = parts[1].trim();
-        syncLocation(latId, lngId, digipinId, frameId);
-      }
-    }
-  }
-
-  function handleCoordInput(currentEl, otherId, digipinId, frameId) {
-    const val = currentEl.value.trim();
-    if (val.includes(',')) {
-      const parts = val.split(',');
-      currentEl.value = parts[0].trim();
-      document.getElementById(otherId).value = parts[1].trim();
-    }
-    const latId = currentEl.id === 'latitude' ? currentEl.id : otherId;
-    const lngId = currentEl.id === 'longitude' ? currentEl.id : otherId;
-    syncLocation(latId, lngId, digipinId, frameId);
-  }
-
-  function syncLocation(latId, lngId, digipinId, frameId) {
-    const lat = document.getElementById(latId).value;
-    const lng = document.getElementById(lngId).value;
-    if (lat && lng) {
-      document.getElementById(digipinId).value = latLngToDigipin(lat, lng);
-      document.getElementById(frameId).src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
-    }
-  }
-
-  function syncDigipin(digipinId, latId, lngId, frameId) {
-    const coords = digipinToLatLng(document.getElementById(digipinId).value);
-    if (coords) {
-      document.getElementById(latId).value = coords.lat;
-      document.getElementById(lngId).value = coords.lng;
-      document.getElementById(frameId).src = `https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=15&output=embed`;
-    }
-  }
-
-  function getCurrentLocation(latId, lngId, digipinId, frameId) {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(p => {
-        document.getElementById(latId).value = p.coords.latitude;
-        document.getElementById(lngId).value = p.coords.longitude;
-        syncLocation(latId, lngId, digipinId, frameId);
-      });
-    }
-  }
-
-  // Copy helper
-  function copyText(val) {
-    if (!val) return alert("Nothing to copy!");
-    navigator.clipboard.writeText(val);
-    alert("Copied to clipboard!");
-  }
-
-  function copyFieldValue(elementId, isImg = false) {
+  function toggleVisibility(elementId, btnId) {
     const el = document.getElementById(elementId);
-    const textToCopy = isImg ? el.src : el.value;
-    copyText(textToCopy);
-  }
-
-  function updateNamePreview() {
-    const f = document.getElementById('firstName').value.trim();
-    const m = document.getElementById('middleName').value.trim();
-    const l = document.getElementById('lastName').value.trim();
-    const full = [f, m, l].filter(Boolean).join(' ') || 'Name';
-    document.getElementById('fullNamePreview').innerText = full;
-  }
-
-  function toggleSameAddress(checkbox) {
-    const perm = document.getElementById('permanentAddress');
-    if (checkbox.checked) {
-      perm.value = document.getElementById('presentAddress').value;
-      perm.readOnly = true;
+    const btn = document.getElementById(btnId);
+    if (el.dataset.state === 'masked') {
+      el.innerText = el.dataset.real;
+      el.dataset.state = 'visible';
+      btn.innerText = '🙈';
     } else {
-      perm.readOnly = false;
+      el.innerText = el.dataset.masked;
+      el.dataset.state = 'masked';
+      btn.innerText = '👁️';
     }
-  }
-
-  function formatAadhaar(el) {
-    let v = el.value.replace(/\D/g, '').slice(0, 12);
-    el.value = v.match(/.{1,4}/g)?.join('-') || '';
-  }
-
-  function fileToBase64(file) {
-    return new Promise((res) => {
-      if (!file) return res('');
-      const r = new FileReader();
-      r.readAsDataURL(file);
-      r.onload = () => res(r.result);
-    });
-  }
-
-  async function handlePhotoSelect(e, imgId) {
-    const file = e.target.files[0];
-    if (file) {
-      const b64 = await fileToBase64(file);
-      document.getElementById(imgId).src = b64;
-    }
-  }
-
-  let famCount = 0;
-  function addFamilyMember(data = {}) {
-    famCount++;
-    const id = famCount;
-    const card = document.createElement('div');
-    card.className = 'family-card';
-    card.id = `fam_${id}`;
-    card.innerHTML = `
-      <div class="family-card-header">
-        <strong>Family Member #${id}</strong>
-        <button type="button" class="btn-danger" onclick="document.getElementById('fam_${id}').remove()">X</button>
-      </div>
-      <div class="row">
-        <div class="form-group">
-          <label>Name</label>
-          <div class="input-wrapper">
-            <input type="text" id="fam_name_${id}" class="fam-name" value="${data.name || ''}" placeholder="Name">
-            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_name_${id}')">📋</button>
-          </div>
-        </div>
-        <div class="form-group"><label>Relation</label>
-          <select class="fam-relation">
-            <option value="Spouse">Spouse</option><option value="Child">Child</option><option value="Parent">Parent</option><option value="Sibling">Sibling</option>
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <div class="form-group">
-          <label>Phone</label>
-          <div class="input-wrapper">
-            <input type="tel" id="fam_phone_${id}" class="fam-phone" value="${data.phone || ''}">
-            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_phone_${id}')">📋</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <div class="input-wrapper">
-            <input type="email" id="fam_email_${id}" class="fam-email" value="${data.email || ''}">
-            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_email_${id}')">📋</button>
-          </div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Photo</label>
-        <div class="input-wrapper">
-          <input type="file" class="fam-photo-file" accept="image/*" onchange="handlePhotoSelect(event, 'fam_img_${id}')">
-          <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_img_${id}', true)">📋</button>
-        </div>
-        <img id="fam_img_${id}" class="photo-preview" src="${data.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}">
-      </div>
-      <div class="row">
-        <div class="form-group">
-          <label>Aadhaar</label>
-          <div class="input-wrapper">
-            <input type="text" id="fam_aadhaar_${id}" class="fam-aadhaar" value="${data.aadhaar || ''}" oninput="formatAadhaar(this)">
-            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_aadhaar_${id}')">📋</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>PAN</label>
-          <div class="input-wrapper">
-            <input type="text" id="fam_pan_${id}" class="fam-pan" value="${data.pan || ''}">
-            <button type="button" class="btn-copy-inside" onclick="copyFieldValue('fam_pan_${id}')">📋</button>
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="form-group"><label>Latitude</label><input type="text" id="fam_lat_${id}" class="fam-lat" value="${data.lat || ''}" oninput="handleCoordInput(this, 'fam_lng_${id}', 'fam_digi_${id}', 'fam_map_${id}')"></div>
-        <div class="form-group"><label>Longitude</label><input type="text" id="fam_lng_${id}" class="fam-lng" value="${data.lng || ''}" oninput="handleCoordInput(this, 'fam_lat_${id}', 'fam_digi_${id}', 'fam_map_${id}')"></div>
-      </div>
-      <div class="form-group"><label>DIGIPIN</label><input type="text" id="fam_digi_${id}" class="fam-digipin" value="${data.digipin || ''}" onchange="syncDigipin('fam_digi_${id}', 'fam_lat_${id}', 'fam_lng_${id}', 'fam_map_${id}')"></div>
-      <div class="map-container"><iframe id="fam_map_${id}" src="about:blank"></iframe></div>
-    `;
-    document.getElementById('familyContainer').appendChild(card);
-  }
-
-  async function buildContactPayload() {
-    const familyMembers = [];
-    document.querySelectorAll('.family-card').forEach(card => {
-      familyMembers.push({
-        name: card.querySelector('.fam-name').value,
-        relation: card.querySelector('.fam-relation').value,
-        phone: card.querySelector('.fam-phone').value,
-        email: card.querySelector('.fam-email').value,
-        photo: card.querySelector('.photo-preview').src,
-        aadhaar: card.querySelector('.fam-aadhaar').value,
-        pan: card.querySelector('.fam-pan').value,
-        digipin: card.querySelector('.fam-digipin').value,
-        lat: card.querySelector('.fam-lat').value,
-        lng: card.querySelector('.fam-lng').value
-      });
-    });
-
-    const firstName = document.getElementById('firstName').value.trim();
-    const middleName = document.getElementById('middleName').value.trim();
-    const lastName = document.getElementById('lastName').value.trim();
-    const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ') || 'Name';
-
-    return {
-      id: document.getElementById('contactId').value || 'id_' + Date.now(),
-      firstName, middleName, lastName, fullName,
-      phone: document.getElementById('phone').value,
-      email: document.getElementById('email').value,
-      presentAddress: document.getElementById('presentAddress').value,
-      permanentAddress: document.getElementById('permanentAddress').value,
-      photo: document.getElementById('photoPreview').src,
-      aadhaar: document.getElementById('aadhaar').value,
-      pan: document.getElementById('pan').value,
-      digipin: document.getElementById('digipin').value,
-      coordinates: {
-        lat: document.getElementById('latitude').value,
-        lng: document.getElementById('longitude').value
-      },
-      familyMembers
-    };
-  }
-
-  async function handleFormSubmit(e) {
-    e.preventDefault();
-    const payload = await buildContactPayload();
-    let contacts = JSON.parse(localStorage.getItem('saved_contacts') || '[]');
-    const idx = contacts.findIndex(c => c.id === payload.id);
-    if (idx > -1) contacts[idx] = payload;
-    else contacts.push(payload);
-    localStorage.setItem('saved_contacts', JSON.stringify(contacts));
-    alert("Saved!");
-    window.location.href = "home.html";
   }
 
   function getFilename(ext) {
@@ -629,65 +212,154 @@
     return `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}.${ext}`;
   }
 
-  async function exportSingle(format) {
-    const payload = await buildContactPayload();
-    if (format === 'json') {
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = getFilename("json"); a.click();
-    } else {
-      const esc = s => `"${String(s || '').replace(/"/g, '""')}"`;
-      const csv = `ID,FirstName,MiddleName,LastName,FullName,Phone,Email,PresentAddress,PermanentAddress,Aadhaar,PAN,DIGIPIN,Latitude,Longitude,Photo\n${esc(payload.id)},${esc(payload.firstName)},${esc(payload.middleName)},${esc(payload.lastName)},${esc(payload.fullName)},${esc(payload.phone)},${esc(payload.email)},${esc(payload.presentAddress)},${esc(payload.permanentAddress)},${esc(payload.aadhaar)},${esc(payload.pan)},${esc(payload.digipin)},${esc(payload.coordinates.lat)},${esc(payload.coordinates.lng)},${esc(payload.photo)}`;
-      const blob = new Blob([csv], { type: "text/csv" });
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = getFilename("csv"); a.click();
+  function downloadJSON() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    const blob = new Blob([JSON.stringify(contacts, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = getFilename("json");
+    a.click();
+  }
+
+  function copyJSON() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    navigator.clipboard.writeText(JSON.stringify(contacts, null, 2));
+    alert("JSON copied to clipboard!");
+  }
+
+  function contactsToCSV(contacts) {
+    if (!contacts.length) return "";
+    const headers = ["ID", "FirstName", "MiddleName", "LastName", "FullName", "Phone", "Email", "PresentAddress", "PermanentAddress", "Aadhaar", "PAN", "DIGIPIN", "Latitude", "Longitude", "Photo"];
+    const esc = str => `"${String(str || '').replace(/"/g, '""')}"`;
+
+    const rows = contacts.map(c => [
+      esc(c.id), esc(c.firstName), esc(c.middleName), esc(c.lastName), esc(c.fullName),
+      esc(c.phone), esc(c.email), esc(c.presentAddress), esc(c.permanentAddress),
+      esc(c.aadhaar), esc(c.pan), esc(c.digipin), esc(c.coordinates?.lat), esc(c.coordinates?.lng), esc(c.photo)
+    ].join(","));
+
+    return [headers.join(","), ...rows].join("\n");
+  }
+
+  function downloadCSV() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    const blob = new Blob([contactsToCSV(contacts)], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = getFilename("csv");
+    a.click();
+  }
+
+  function copyCSV() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    navigator.clipboard.writeText(contactsToCSV(contacts));
+    alert("CSV copied to clipboard!");
+  }
+
+  function deleteContact(id) {
+    if (confirm("Delete this contact?")) {
+      const updated = getContacts().filter(c => c.id !== id);
+      localStorage.setItem('saved_contacts', JSON.stringify(updated));
+      renderContacts();
     }
   }
 
-  async function copySingle(format) {
-    const payload = await buildContactPayload();
-    if (format === 'json') {
-      navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    } else {
-      const esc = s => `"${String(s || '').replace(/"/g, '""')}"`;
-      const csv = `ID,FirstName,MiddleName,LastName,FullName,Phone,Email,PresentAddress,PermanentAddress,Aadhaar,PAN,DIGIPIN,Latitude,Longitude,Photo\n${esc(payload.id)},${esc(payload.firstName)},${esc(payload.middleName)},${esc(payload.lastName)},${esc(payload.fullName)},${esc(payload.phone)},${esc(payload.email)},${esc(payload.presentAddress)},${esc(payload.permanentAddress)},${esc(payload.aadhaar)},${esc(payload.pan)},${esc(payload.digipin)},${esc(payload.coordinates.lat)},${esc(payload.coordinates.lng)},${esc(payload.photo)}`;
-      navigator.clipboard.writeText(csv);
+  function renderContacts() {
+    const grid = document.getElementById('contactsGrid');
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const contacts = getContacts();
+
+    const filtered = contacts.filter(c => 
+      (c.fullName && c.fullName.toLowerCase().includes(query)) ||
+      (c.phone && c.phone.includes(query)) ||
+      (c.email && c.email.toLowerCase().includes(query))
+    );
+
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="empty-state">No contacts found.</div>`;
+      return;
     }
-    alert(`${format.toUpperCase()} copied to clipboard!`);
+
+    grid.innerHTML = filtered.map(c => {
+      const fieldId = suffix => `f_${c.id}_${suffix}`;
+      const btnId = suffix => `btn_${c.id}_${suffix}`;
+
+      return `
+        <div class="contact-card">
+          <div class="card-header">
+            <img src="${c.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}" class="avatar">
+            <div>
+              <h3 class="contact-name">${c.fullName || 'Name'}</h3>
+              <small style="color:#64748b;">${c.phone || 'No Mobile'}</small>
+            </div>
+          </div>
+          <ul class="details-list">
+            <li>
+              <span class="field-label">Mobile:</span>
+              <span>${c.phone || 'N/A'}</span>
+            </li>
+            <li>
+              <span class="field-label">Present Address:</span>
+              <span>${c.presentAddress || 'N/A'}</span>
+            </li>
+            <li>
+              <span class="field-label">Email:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('email')}" data-state="masked" data-real="${c.email || ''}" data-masked="${maskText(c.email, 'email')}">${maskText(c.email, 'email')}</span>
+                <button id="${btnId('email')}" class="icon-btn" onclick="toggleVisibility('${fieldId('email')}', '${btnId('email')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Aadhaar:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('aadhaar')}" data-state="masked" data-real="${c.aadhaar || ''}" data-masked="${maskText(c.aadhaar, 'aadhaar')}">${maskText(c.aadhaar, 'aadhaar')}</span>
+                <button id="${btnId('aadhaar')}" class="icon-btn" onclick="toggleVisibility('${fieldId('aadhaar')}', '${btnId('aadhaar')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">PAN:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('pan')}" data-state="masked" data-real="${c.pan || ''}" data-masked="${maskText(c.pan, 'pan')}">${maskText(c.pan, 'pan')}</span>
+                <button id="${btnId('pan')}" class="icon-btn" onclick="toggleVisibility('${fieldId('pan')}', '${btnId('pan')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">DIGIPIN:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('digipin')}" data-state="masked" data-real="${c.digipin || ''}" data-masked="${maskText(c.digipin, 'generic')}">${maskText(c.digipin, 'generic')}</span>
+                <button id="${btnId('digipin')}" class="icon-btn" onclick="toggleVisibility('${fieldId('digipin')}', '${btnId('digipin')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Coordinates:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('coords')}" data-state="masked" data-real="${c.coordinates?.lat ? c.coordinates.lat + ', ' + c.coordinates.lng : ''}" data-masked="••••, ••••">••••, ••••</span>
+                <button id="${btnId('coords')}" class="icon-btn" onclick="toggleVisibility('${fieldId('coords')}', '${btnId('coords')}')">👁️</button>
+              </span>
+            </li>
+            ${c.permanentAddress ? `
+            <li>
+              <span class="field-label">Perm. Address:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('perm')}" data-state="masked" data-real="${c.permanentAddress}" data-masked="••••••••">••••••••</span>
+                <button id="${btnId('perm')}" class="icon-btn" onclick="toggleVisibility('${fieldId('perm')}', '${btnId('perm')}')">👁️</button>
+              </span>
+            </li>` : ''}
+          </ul>
+          <div class="card-actions">
+            <a class="btn btn-secondary" href="form.html?id=${c.id}">Edit</a>
+            <button class="btn btn-danger" onclick="deleteContact('${c.id}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const id = new URLSearchParams(window.location.search).get('id');
-    if (id) {
-      const contacts = JSON.parse(localStorage.getItem('saved_contacts') || '[]');
-      const c = contacts.find(i => i.id === id);
-      if (c) {
-        document.getElementById('contactId').value = c.id;
-        document.getElementById('firstName').value = c.firstName || '';
-        document.getElementById('middleName').value = c.middleName || '';
-        document.getElementById('lastName').value = c.lastName || '';
-        updateNamePreview();
-
-        document.getElementById('phone').value = c.phone || '';
-        document.getElementById('email').value = c.email || '';
-        document.getElementById('presentAddress').value = c.presentAddress || '';
-        document.getElementById('permanentAddress').value = c.permanentAddress || '';
-        document.getElementById('photoPreview').src = c.photo || '';
-        document.getElementById('aadhaar').value = c.aadhaar || '';
-        document.getElementById('pan').value = c.pan || '';
-        document.getElementById('digipin').value = c.digipin || '';
-
-        if (c.coordinates) {
-          document.getElementById('latitude').value = c.coordinates.lat || '';
-          document.getElementById('longitude').value = c.coordinates.lng || '';
-          if (c.coordinates.lat && c.coordinates.lng) {
-            document.getElementById('quickCoords').value = `${c.coordinates.lat}, ${c.coordinates.lng}`;
-          }
-          syncLocation('latitude', 'longitude', 'digipin', 'mapFrame');
-        }
-
-        if (c.familyMembers) c.familyMembers.forEach(f => addFamilyMember(f));
-      }
-    }
-  });
+  document.addEventListener('DOMContentLoaded', renderContacts);
 </script>
 </body>
 </html>
