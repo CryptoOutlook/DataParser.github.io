@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact Manager - Home</title>
+  <title>Contacts Directory</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -77,7 +77,7 @@
 
     .contacts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 20px;
     }
 
@@ -97,8 +97,8 @@
     }
 
     .avatar {
-      width: 55px;
-      height: 55px;
+      width: 60px;
+      height: 60px;
       border-radius: 50%;
       object-fit: cover;
       background: #e2e8f0;
@@ -115,7 +115,34 @@
       list-style: none;
     }
 
-    .details-list li { margin-bottom: 5px; word-break: break-all; }
+    .details-list li {
+      margin-bottom: 8px;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field-label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .field-value-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: #e2e8f0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 2px 6px;
+      font-size: 0.8rem;
+    }
 
     .card-actions {
       display: flex;
@@ -155,15 +182,36 @@
     return JSON.parse(localStorage.getItem('saved_contacts') || '[]');
   }
 
-  function getFilename(ext) {
-    const d = new Date();
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return `${dd}${mm}${yyyy}.${ext}`;
+  function maskText(val, type) {
+    if (!val) return 'N/A';
+    if (type === 'aadhaar') return 'XXXX-XXXX-' + (val.replace(/\D/g, '').slice(-4) || 'XXXX');
+    if (type === 'pan') return 'XXXXX' + (val.slice(-4) || 'XXXX');
+    if (type === 'email') {
+      const parts = val.split('@');
+      return parts[0].slice(0, 2) + '••••@' + (parts[1] || '');
+    }
+    return '••••••••';
   }
 
-  // Export & Copy Logic
+  function toggleVisibility(elementId, btnId) {
+    const el = document.getElementById(elementId);
+    const btn = document.getElementById(btnId);
+    if (el.dataset.state === 'masked') {
+      el.innerText = el.dataset.real;
+      el.dataset.state = 'visible';
+      btn.innerText = '🙈';
+    } else {
+      el.innerText = el.dataset.masked;
+      el.dataset.state = 'masked';
+      btn.innerText = '👁️';
+    }
+  }
+
+  function getFilename(ext) {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}.${ext}`;
+  }
+
   function downloadJSON() {
     const contacts = getContacts();
     if (!contacts.length) return alert("No contacts available!");
@@ -183,21 +231,13 @@
 
   function contactsToCSV(contacts) {
     if (!contacts.length) return "";
-    const headers = ["ID", "FullName", "Phone", "Email", "Aadhaar", "PAN", "DIGIPIN", "Latitude", "Longitude", "Photo", "FamilyMembersCount"];
+    const headers = ["ID", "FirstName", "MiddleName", "LastName", "FullName", "Phone", "Email", "PresentAddress", "PermanentAddress", "Aadhaar", "PAN", "DIGIPIN", "Latitude", "Longitude", "Photo"];
     const esc = str => `"${String(str || '').replace(/"/g, '""')}"`;
 
     const rows = contacts.map(c => [
-      esc(c.id),
-      esc(c.fullName),
-      esc(c.phone),
-      esc(c.email),
-      esc(c.aadhaar),
-      esc(c.pan),
-      esc(c.digipin),
-      esc(c.coordinates?.lat),
-      esc(c.coordinates?.lng),
-      esc(c.photo),
-      esc(c.familyMembers ? c.familyMembers.length : 0)
+      esc(c.id), esc(c.firstName), esc(c.middleName), esc(c.lastName), esc(c.fullName),
+      esc(c.phone), esc(c.email), esc(c.presentAddress), esc(c.permanentAddress),
+      esc(c.aadhaar), esc(c.pan), esc(c.digipin), esc(c.coordinates?.lat), esc(c.coordinates?.lng), esc(c.photo)
     ].join(","));
 
     return [headers.join(","), ...rows].join("\n");
@@ -206,8 +246,7 @@
   function downloadCSV() {
     const contacts = getContacts();
     if (!contacts.length) return alert("No contacts available!");
-    const csvStr = contactsToCSV(contacts);
-    const blob = new Blob([csvStr], { type: "text/csv" });
+    const blob = new Blob([contactsToCSV(contacts)], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = getFilename("csv");
@@ -235,10 +274,9 @@
     const contacts = getContacts();
 
     const filtered = contacts.filter(c => 
-      c.fullName.toLowerCase().includes(query) ||
+      (c.fullName && c.fullName.toLowerCase().includes(query)) ||
       (c.phone && c.phone.includes(query)) ||
-      (c.email && c.email.toLowerCase().includes(query)) ||
-      (c.digipin && c.digipin.toLowerCase().includes(query))
+      (c.email && c.email.toLowerCase().includes(query))
     );
 
     if (!filtered.length) {
@@ -246,29 +284,79 @@
       return;
     }
 
-    grid.innerHTML = filtered.map(c => `
-      <div class="contact-card">
-        <div class="card-header">
-          <img src="${c.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}" class="avatar">
-          <div>
-            <h3 class="contact-name">${c.fullName}</h3>
-            ${c.digipin ? `<small style="background:#e2e8f0;padding:2px 6px;border-radius:4px;">${c.digipin}</small>` : ''}
+    grid.innerHTML = filtered.map(c => {
+      const fieldId = suffix => `f_${c.id}_${suffix}`;
+      const btnId = suffix => `btn_${c.id}_${suffix}`;
+
+      return `
+        <div class="contact-card">
+          <div class="card-header">
+            <img src="${c.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}" class="avatar">
+            <div>
+              <h3 class="contact-name">${c.fullName || 'Name'}</h3>
+              <small style="color:#64748b;">${c.phone || 'No Mobile'}</small>
+            </div>
+          </div>
+          <ul class="details-list">
+            <li>
+              <span class="field-label">Mobile:</span>
+              <span>${c.phone || 'N/A'}</span>
+            </li>
+            <li>
+              <span class="field-label">Present Address:</span>
+              <span>${c.presentAddress || 'N/A'}</span>
+            </li>
+            <li>
+              <span class="field-label">Email:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('email')}" data-state="masked" data-real="${c.email || ''}" data-masked="${maskText(c.email, 'email')}">${maskText(c.email, 'email')}</span>
+                <button id="${btnId('email')}" class="icon-btn" onclick="toggleVisibility('${fieldId('email')}', '${btnId('email')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Aadhaar:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('aadhaar')}" data-state="masked" data-real="${c.aadhaar || ''}" data-masked="${maskText(c.aadhaar, 'aadhaar')}">${maskText(c.aadhaar, 'aadhaar')}</span>
+                <button id="${btnId('aadhaar')}" class="icon-btn" onclick="toggleVisibility('${fieldId('aadhaar')}', '${btnId('aadhaar')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">PAN:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('pan')}" data-state="masked" data-real="${c.pan || ''}" data-masked="${maskText(c.pan, 'pan')}">${maskText(c.pan, 'pan')}</span>
+                <button id="${btnId('pan')}" class="icon-btn" onclick="toggleVisibility('${fieldId('pan')}', '${btnId('pan')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">DIGIPIN:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('digipin')}" data-state="masked" data-real="${c.digipin || ''}" data-masked="${maskText(c.digipin, 'generic')}">${maskText(c.digipin, 'generic')}</span>
+                <button id="${btnId('digipin')}" class="icon-btn" onclick="toggleVisibility('${fieldId('digipin')}', '${btnId('digipin')}')">👁️</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Coordinates:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('coords')}" data-state="masked" data-real="${c.coordinates?.lat ? c.coordinates.lat + ', ' + c.coordinates.lng : ''}" data-masked="••••, ••••">••••, ••••</span>
+                <button id="${btnId('coords')}" class="icon-btn" onclick="toggleVisibility('${fieldId('coords')}', '${btnId('coords')}')">👁️</button>
+              </span>
+            </li>
+            ${c.permanentAddress ? `
+            <li>
+              <span class="field-label">Perm. Address:</span>
+              <span class="field-value-wrap">
+                <span id="${fieldId('perm')}" data-state="masked" data-real="${c.permanentAddress}" data-masked="••••••••">••••••••</span>
+                <button id="${btnId('perm')}" class="icon-btn" onclick="toggleVisibility('${fieldId('perm')}', '${btnId('perm')}')">👁️</button>
+              </span>
+            </li>` : ''}
+          </ul>
+          <div class="card-actions">
+            <a class="btn btn-secondary" href="form.html?id=${c.id}">Edit</a>
+            <button class="btn btn-danger" onclick="deleteContact('${c.id}')">Delete</button>
           </div>
         </div>
-        <ul class="details-list">
-          <li><strong>Phone:</strong> ${c.phone || 'N/A'}</li>
-          <li><strong>Email:</strong> ${c.email || 'N/A'}</li>
-          ${c.aadhaar ? `<li><strong>Aadhaar:</strong> ${c.aadhaar}</li>` : ''}
-          ${c.pan ? `<li><strong>PAN:</strong> ${c.pan}</li>` : ''}
-          ${c.coordinates?.lat ? `<li><strong>Map:</strong> <a href="https://maps.google.com/maps?q=${c.coordinates.lat},${c.coordinates.lng}" target="_blank">View Map</a></li>` : ''}
-          <li><strong>Family Members:</strong> ${c.familyMembers ? c.familyMembers.length : 0}</li>
-        </ul>
-        <div class="card-actions">
-          <a class="btn btn-secondary" href="form.html?id=${c.id}">Edit</a>
-          <button class="btn btn-danger" onclick="deleteContact('${c.id}')">Delete</button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   document.addEventListener('DOMContentLoaded', renderContacts);
