@@ -132,16 +132,28 @@
     .field-value-wrap {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
-    .icon-btn {
-      background: #e2e8f0;
-      border: 1px solid var(--border);
-      border-radius: 4px;
+    /* Mostly transparent icon buttons */
+    .btn-icon-action {
+      background: transparent;
+      border: none;
       cursor: pointer;
-      padding: 2px 6px;
-      font-size: 0.8rem;
+      color: #64748b;
+      opacity: 0.45;
+      padding: 3px 5px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon-action:hover {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--primary);
     }
 
     .card-actions {
@@ -207,6 +219,15 @@
     }
   }
 
+  function copyValueById(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const val = el.dataset.real !== undefined ? el.dataset.real : el.innerText;
+    if (!val || val === 'N/A') return alert("Nothing to copy!");
+    navigator.clipboard.writeText(val);
+    alert("Copied to clipboard!");
+  }
+
   function getFilename(ext) {
     const d = new Date();
     return `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}.${ext}`;
@@ -268,6 +289,13 @@
     }
   }
 
+  const copySVG = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="12" height="12" rx="2.5" ry="2.5"></rect>
+      <path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-7A2.5 2.5 0 0 0 4 5.5v7A2.5 2.5 0 0 0 6.5 15H8"></path>
+    </svg>
+  `;
+
   function renderContacts() {
     const grid = document.getElementById('contactsGrid');
     const query = document.getElementById('searchInput').value.toLowerCase();
@@ -285,8 +313,8 @@
     }
 
     grid.innerHTML = filtered.map(c => {
-      const fieldId = suffix => `f_${c.id}_${suffix}`;
-      const btnId = suffix => `btn_${c.id}_${suffix}`;
+      const fid = suffix => `f_${c.id}_${suffix}`;
+      const btnid = suffix => `btn_${c.id}_${suffix}`;
 
       return `
         <div class="contact-card">
@@ -300,53 +328,65 @@
           <ul class="details-list">
             <li>
               <span class="field-label">Mobile:</span>
-              <span>${c.phone || 'N/A'}</span>
+              <span class="field-value-wrap">
+                <span id="${fid('phone')}" data-real="${c.phone || ''}">${c.phone || 'N/A'}</span>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('phone')}')" title="Copy Mobile">${copySVG}</button>
+              </span>
             </li>
             <li>
               <span class="field-label">Present Address:</span>
-              <span>${c.presentAddress || 'N/A'}</span>
+              <span class="field-value-wrap">
+                <span id="${fid('pres_addr')}" data-real="${c.presentAddress || ''}">${c.presentAddress || 'N/A'}</span>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('pres_addr')}')" title="Copy Present Address">${copySVG}</button>
+              </span>
             </li>
             <li>
               <span class="field-label">Email:</span>
               <span class="field-value-wrap">
-                <span id="${fieldId('email')}" data-state="masked" data-real="${c.email || ''}" data-masked="${maskText(c.email, 'email')}">${maskText(c.email, 'email')}</span>
-                <button id="${btnId('email')}" class="icon-btn" onclick="toggleVisibility('${fieldId('email')}', '${btnId('email')}')">👁️</button>
+                <span id="${fid('email')}" data-state="masked" data-real="${c.email || ''}" data-masked="${maskText(c.email, 'email')}">${maskText(c.email, 'email')}</span>
+                <button id="${btnid('email')}" class="btn-icon-action" onclick="toggleVisibility('${fid('email')}', '${btnid('email')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('email')}')" title="Copy Email">${copySVG}</button>
               </span>
             </li>
             <li>
               <span class="field-label">Aadhaar:</span>
               <span class="field-value-wrap">
-                <span id="${fieldId('aadhaar')}" data-state="masked" data-real="${c.aadhaar || ''}" data-masked="${maskText(c.aadhaar, 'aadhaar')}">${maskText(c.aadhaar, 'aadhaar')}</span>
-                <button id="${btnId('aadhaar')}" class="icon-btn" onclick="toggleVisibility('${fieldId('aadhaar')}', '${btnId('aadhaar')}')">👁️</button>
+                <span id="${fid('aadhaar')}" data-state="masked" data-real="${c.aadhaar || ''}" data-masked="${maskText(c.aadhaar, 'aadhaar')}">${maskText(c.aadhaar, 'aadhaar')}</span>
+                <button id="${btnid('aadhaar')}" class="btn-icon-action" onclick="toggleVisibility('${fid('aadhaar')}', '${btnid('aadhaar')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('aadhaar')}')" title="Copy Aadhaar">${copySVG}</button>
               </span>
             </li>
             <li>
               <span class="field-label">PAN:</span>
               <span class="field-value-wrap">
-                <span id="${fieldId('pan')}" data-state="masked" data-real="${c.pan || ''}" data-masked="${maskText(c.pan, 'pan')}">${maskText(c.pan, 'pan')}</span>
-                <button id="${btnId('pan')}" class="icon-btn" onclick="toggleVisibility('${fieldId('pan')}', '${btnId('pan')}')">👁️</button>
+                <span id="${fid('pan')}" data-state="masked" data-real="${c.pan || ''}" data-masked="${maskText(c.pan, 'pan')}">${maskText(c.pan, 'pan')}</span>
+                <button id="${btnid('pan')}" class="btn-icon-action" onclick="toggleVisibility('${fid('pan')}', '${btnid('pan')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('pan')}')" title="Copy PAN">${copySVG}</button>
               </span>
             </li>
             <li>
               <span class="field-label">DIGIPIN:</span>
               <span class="field-value-wrap">
-                <span id="${fieldId('digipin')}" data-state="masked" data-real="${c.digipin || ''}" data-masked="${maskText(c.digipin, 'generic')}">${maskText(c.digipin, 'generic')}</span>
-                <button id="${btnId('digipin')}" class="icon-btn" onclick="toggleVisibility('${fieldId('digipin')}', '${btnId('digipin')}')">👁️</button>
+                <span id="${fid('digipin')}" data-state="masked" data-real="${c.digipin || ''}" data-masked="${maskText(c.digipin, 'generic')}">${maskText(c.digipin, 'generic')}</span>
+                <button id="${btnid('digipin')}" class="btn-icon-action" onclick="toggleVisibility('${fid('digipin')}', '${btnid('digipin')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('digipin')}')" title="Copy DIGIPIN">${copySVG}</button>
               </span>
             </li>
             <li>
               <span class="field-label">Coordinates:</span>
               <span class="field-value-wrap">
-                <span id="${fieldId('coords')}" data-state="masked" data-real="${c.coordinates?.lat ? c.coordinates.lat + ', ' + c.coordinates.lng : ''}" data-masked="••••, ••••">••••, ••••</span>
-                <button id="${btnId('coords')}" class="icon-btn" onclick="toggleVisibility('${fieldId('coords')}', '${btnId('coords')}')">👁️</button>
+                <span id="${fid('coords')}" data-state="masked" data-real="${c.coordinates?.lat ? c.coordinates.lat + ', ' + c.coordinates.lng : ''}" data-masked="••••, ••••">••••, ••••</span>
+                <button id="${btnid('coords')}" class="btn-icon-action" onclick="toggleVisibility('${fid('coords')}', '${btnid('coords')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('coords')}')" title="Copy Coordinates">${copySVG}</button>
               </span>
             </li>
             ${c.permanentAddress ? `
             <li>
               <span class="field-label">Perm. Address:</span>
               <span class="field-value-wrap">
-                <span id="${fieldId('perm')}" data-state="masked" data-real="${c.permanentAddress}" data-masked="••••••••">••••••••</span>
-                <button id="${btnId('perm')}" class="icon-btn" onclick="toggleVisibility('${fieldId('perm')}', '${btnId('perm')}')">👁️</button>
+                <span id="${fid('perm_addr')}" data-state="masked" data-real="${c.permanentAddress}" data-masked="••••••••">••••••••</span>
+                <button id="${btnid('perm_addr')}" class="btn-icon-action" onclick="toggleVisibility('${fid('perm_addr')}', '${btnid('perm_addr')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('perm_addr')}')" title="Copy Permanent Address">${copySVG}</button>
               </span>
             </li>` : ''}
           </ul>
