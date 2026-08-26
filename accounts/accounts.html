@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Record Navigator</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --accent: #6366f1;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #22c55e;
+      --field-bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .badge {
+      background: var(--accent);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* Section Cards */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Common Fields Grid */
+    .common-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    /* Field Item */
+    .field-item {
+      background: var(--field-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .field-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      word-break: break-all;
+      color: var(--text);
+    }
+
+    /* Copy Button */
+    .copy-btn {
+      background: #334155;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      background: var(--primary);
+      color: #0f172a;
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      color: #fff;
+    }
+
+    /* Navigator Bar */
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 20px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      background: var(--primary);
+      color: #0f172a;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .nav-indicator {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--primary);
+    }
+
+    /* Dynamic / Distinct Grid */
+    .distinct-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    /* Quick jump select */
+    select.row-selector {
+      background: var(--field-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--success);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s ease;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .shortcut-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Data Record Navigator</h1>
+      <span class="badge" id="totalRecordsBadge">10 Records Loaded</span>
+    </header>
+
+    <section class="card">
+      <div class="card-title">
+        <span>🔒 Shared / Constant Fields (Identical across all records)</span>
+      </div>
+      <div class="common-grid" id="commonContainer">
+        </div>
+    </section>
+
+    <div class="nav-bar">
+      <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="navigate(-1)">&#9664; Prev</button>
+        <button class="nav-btn" id="nextBtn" onclick="navigate(1)">Next &#9654;</button>
+        <span class="nav-indicator" id="recordIndicator">Record 1 / 10</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="jumpSelect" style="font-size: 0.8rem; color: var(--text-muted);">Jump to:</label>
+        <select class="row-selector" id="jumpSelect" onchange="jumpTo(this.value)">
+          </select>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-title" style="justify-content: space-between;">
+        <span>📄 Active Record Fields (Distinct / Dynamic)</span>
+        <button class="copy-btn" onclick="copyEntireCurrentRow()">📋 Copy Full Row</button>
+      </div>
+      <div class="distinct-grid" id="distinctContainer">
+        </div>
+    </section>
+
+    <div class="shortcut-hint">
+      Tip: Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> arrow keys to navigate records quickly.
+    </div>
+  </div>
+
+  <div id="toast">Copied to clipboard!</div>
+
+  <script>
+    // Raw TSV dataset provided
+    const rawData = [
+      ["41", "1/29/2026", "J6736", "38", "364527423", "RDIPN", "012", "J6250", "100", "F26012912053244366AP", "400887152", "004", "100", "20196744855", "020196744855", "IN4151646", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196744855", "020196744855", "THOTAPALLI", "RD"],
+      ["42", "1/29/2026", "J6736", "39", "364527423", "RDIPN", "012", "J6250", "100", "F26012912073307423AP", "400887152", "004", "100", "20196746527", "020196746527", "IN4160346", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196746527", "020196746527", "THOTAPALLI", "RD"],
+      ["43", "1/29/2026", "J6736", "40", "364527423", "RDIPN", "012", "J6250", "100", "F26012912093941541AP", "400887152", "004", "100", "20196747503", "020196747503", "IN4168211", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196747503", "020196747503", "THOTAPALLI", "RD"],
+      ["44", "1/29/2026", "J6736", "41", "364527423", "RDIPN", "012", "J6250", "100", "F26012912112122543AP", "400887152", "004", "100", "20196749050", "020196749050", "IN4176572", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196749050", "020196749050", "THOTAPALLI", "RD"],
+      ["45", "1/29/2026", "J6736", "42", "364527423", "RDIPN", "012", "J6250", "100", "F26012912130830342AP", "400887152", "004", "100", "20196750056", "020196750056", "IN4187222", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196750056", "020196750056", "THOTAPALLI", "RD"],
+      ["46", "1/29/2026", "J6736", "43", "342185073", "RDIPN", "012", "J6250", "100", "F26012912184268300AP", "357347874", "018", "100", "20196753037", "020196753037", "IN4210278", "Thursday, January 29, 2026", "D JYOTHI", "020196753037", "020196753037", "THOTAPALLI", "RD"],
+      ["47", "1/29/2026", "J6736", "44", "342185073", "RDIPN", "012", "J6250", "100", "F26012912271460017AP", "357347874", "018", "100", "20196753471", "020196753471", "IN4220657", "Thursday, January 29, 2026", "D JYOTHI", "020196753471", "020196753471", "THOTAPALLI", "RD"],
+      ["48", "1/29/2026", "J6736", "45", "342185073", "RDIPN", "012", "J6250", "100", "F26012912290888868AP", "357347874", "018", "100", "20196754885", "020196754885", "IN4231597", "Thursday, January 29, 2026", "D JYOTHI", "020196754885", "020196754885", "THOTAPALLI", "RD"],
+      ["49", "1/29/2026", "J6736", "46", "342185073", "RDIPN", "012", "J6250", "100", "F26012912302004411AP", "357347874", "018", "100", "20196757658", "020196757658", "IN4240810", "Thursday, January 29, 2026", "D JYOTHI", "020196757658", "020196757658", "THOTAPALLI", "RD"],
+      ["50", "1/29/2026", "J6736", "47", "342185073", "RDIPN", "012", "J6250", "100", "F26012912314281460AP", "357347874", "018", "100", "20196758384", "020196758384", "IN4256718", "Thursday, January 29, 2026", "D JYOTHI", "020196758384", "020196758384", "THOTAPALLI", "RD"]
+    ];
+
+    // Descriptive headers for the columns
+    const columnLabels = [
+      "Sl No", "Date", "User ID", "Token No", "Account / Ref 1",
+      "Type", "Sub-Code", "Terminal ID", "Amount 1", "Transaction ID",
+      "Customer ID / CIF", "Branch Batch", "Amount 2", "Txn Ref Num", "Primary Account",
+      "Voucher Code", "Full Date", "Customer Name", "Account Alias 1", "Account Alias 2",
+      "Branch Location", "Scheme Code"
+    ];
+
+    let currentIndex = 0;
+    let commonColIndices = [];
+    let distinctColIndices = [];
+
+    // Analyze which columns are static (identical across all rows) vs distinct
+    function analyzeData() {
+      const numCols = rawData[0].length;
+      commonColIndices = [];
+      distinctColIndices = [];
+
+      for (let c = 0; c < numCols; c++) {
+        const firstVal = rawData[0][c];
+        const isCommon = rawData.every(row => row[c] === firstVal);
+        if (isCommon) {
+          commonColIndices.push(c);
+        } else {
+          distinctColIndices.push(c);
+        }
+      }
+    }
+
+    // Render static common fields once
+    function renderCommonFields() {
+      const container = document.getElementById("commonContainer");
+      container.innerHTML = "";
+
+      commonColIndices.forEach(colIdx => {
+        const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+        const val = rawData[0][colIdx];
+
+        const item = document.createElement("div");
+        item.className = "field-item";
+        item.innerHTML = `
+          <div class="field-label">${label}</div>
+          <div class="field-body">
+            <span class="field-val">${val}</span>
+            <button class="copy-btn" onclick="copyText('${val}', this)">Copy</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Render active row fields
+    function renderCurrentRecord() {
+      const container = document.getElementById("distinctContainer");
+      container.innerHTML = "";
+      const row = rawData[currentIndex];
+
+      distinctColIndices.forEach(colIdx => {
+        const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+        const val = row[colIdx];
+
+        const item = document.createElement("div");
+        item.className = "field-item";
+        item.innerHTML = `
+          <div class="field-label">${label}</div>
+          <div class="field-body">
+            <span class="field-val">${val}</span>
+            <button class="copy-btn" onclick="copyText('${val}', this)">Copy</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      // Update Controls
+      document.getElementById("recordIndicator").innerText = `Record ${currentIndex + 1} / ${rawData.length}`;
+      document.getElementById("jumpSelect").value = currentIndex;
+      document.getElementById("prevBtn").disabled = currentIndex === 0;
+      document.getElementById("nextBtn").disabled = currentIndex === rawData.length - 1;
+    }
+
+    // Setup Jump Dropdown
+    function initJumpDropdown() {
+      const select = document.getElementById("jumpSelect");
+      select.innerHTML = "";
+      rawData.forEach((row, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        // Use Sl No + Name or Transaction ID for label
+        opt.innerText = `#${row[0]} - ${row[17]} (${row[9].slice(-6)})`;
+        select.appendChild(opt);
+      });
+    }
+
+    // Navigation handlers
+    function navigate(delta) {
+      const newIdx = currentIndex + delta;
+      if (newIdx >= 0 && newIdx < rawData.length) {
+        currentIndex = newIdx;
+        renderCurrentRecord();
+      }
+    }
+
+    function jumpTo(index) {
+      currentIndex = parseInt(index, 10);
+      renderCurrentRecord();
+    }
+
+    // Copy to clipboard
+    function copyText(text, btnElement) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Copied: ${text}`);
+        if (btnElement) {
+          const originalText = btnElement.innerText;
+          btnElement.innerText = "Copied! ✓";
+          btnElement.classList.add("copied");
+          setTimeout(() => {
+            btnElement.innerText = originalText;
+            btnElement.classList.remove("copied");
+          }, 1200);
+        }
+      });
+    }
+
+    // Copy full row data formatted
+    function copyEntireCurrentRow() {
+      const row = rawData[currentIndex];
+      const text = row.join("\t");
+      copyText(text, null);
+      showToast(`Copied full row #${row[0]} (Tab-Separated)`);
+    }
+
+    // Toast popup
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1800);
+    }
+
+    // Keyboard Shortcuts (Left / Right Arrows)
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") navigate(-1);
+      if (e.key === "ArrowRight") navigate(1);
+    });
+
+    // Initialize App
+    analyzeData();
+    renderCommonFields();
+    initJumpDropdown();
+    renderCurrentRecord();
+  </script>
+</body>
+</html>
