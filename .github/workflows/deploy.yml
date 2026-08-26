@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - development  # Replace with your second branch name
+      - accounts
 
 permissions:
   contents: write
