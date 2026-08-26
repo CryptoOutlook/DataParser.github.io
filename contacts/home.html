@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacts Directory</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    h1 { margin: 0; color: var(--primary); }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-secondary { background-color: #64748b; }
+    .btn-success { background-color: var(--success); }
+    .btn-danger { background-color: var(--danger); }
+    .btn:hover { opacity: 0.9; }
+
+    .search-box {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+
+    .contacts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .contact-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #e2e8f0;
+      border: 1px solid var(--border);
+    }
+
+    .contact-name { font-size: 1.1rem; font-weight: 700; margin: 0; }
+
+    .details-list {
+      font-size: 0.88rem;
+      color: #475569;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .details-list li {
+      margin-bottom: 8px;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field-label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .field-value-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Mostly transparent icon buttons */
+    .btn-icon-action {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #64748b;
+      opacity: 0.45;
+      padding: 3px 5px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon-action:hover {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--primary);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .empty-state { text-align: center; padding: 40px; color: #64748b; grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-bar">
+    <h1>Contacts Directory</h1>
+    <a href="form.html" class="btn">+ Add Contact</a>
+  </div>
+
+  <div class="header-bar" style="margin-bottom:16px;">
+    <div class="btn-group">
+      <button class="btn btn-success" onclick="downloadJSON()">Save as JSON</button>
+      <button class="btn btn-secondary" onclick="copyJSON()">Copy as JSON</button>
+      <button class="btn btn-success" onclick="downloadCSV()">Save as CSV</button>
+      <button class="btn btn-secondary" onclick="copyCSV()">Copy as CSV</button>
+    </div>
+  </div>
+
+  <input type="text" id="searchInput" class="search-box" placeholder="Search contacts..." oninput="renderContacts()">
+
+  <div class="contacts-grid" id="contactsGrid"></div>
+</div>
+
+<script>
+  function getContacts() {
+    return JSON.parse(localStorage.getItem('saved_contacts') || '[]');
+  }
+
+  function maskText(val, type) {
+    if (!val) return 'N/A';
+    if (type === 'aadhaar') return 'XXXX-XXXX-' + (val.replace(/\D/g, '').slice(-4) || 'XXXX');
+    if (type === 'pan') return 'XXXXX' + (val.slice(-4) || 'XXXX');
+    if (type === 'email') {
+      const parts = val.split('@');
+      return parts[0].slice(0, 2) + '••••@' + (parts[1] || '');
+    }
+    return '••••••••';
+  }
+
+  function toggleVisibility(elementId, btnId) {
+    const el = document.getElementById(elementId);
+    const btn = document.getElementById(btnId);
+    if (el.dataset.state === 'masked') {
+      el.innerText = el.dataset.real;
+      el.dataset.state = 'visible';
+      btn.innerText = '🙈';
+    } else {
+      el.innerText = el.dataset.masked;
+      el.dataset.state = 'masked';
+      btn.innerText = '👁️';
+    }
+  }
+
+  function copyValueById(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const val = el.dataset.real !== undefined ? el.dataset.real : el.innerText;
+    if (!val || val === 'N/A') return alert("Nothing to copy!");
+    navigator.clipboard.writeText(val);
+    alert("Copied to clipboard!");
+  }
+
+  function getFilename(ext) {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2,'0')}${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()}.${ext}`;
+  }
+
+  function downloadJSON() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    const blob = new Blob([JSON.stringify(contacts, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = getFilename("json");
+    a.click();
+  }
+
+  function copyJSON() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    navigator.clipboard.writeText(JSON.stringify(contacts, null, 2));
+    alert("JSON copied to clipboard!");
+  }
+
+  function contactsToCSV(contacts) {
+    if (!contacts.length) return "";
+    const headers = ["ID", "FirstName", "MiddleName", "LastName", "FullName", "Phone", "Email", "PresentAddress", "PermanentAddress", "Aadhaar", "PAN", "DIGIPIN", "Latitude", "Longitude", "Photo"];
+    const esc = str => `"${String(str || '').replace(/"/g, '""')}"`;
+
+    const rows = contacts.map(c => [
+      esc(c.id), esc(c.firstName), esc(c.middleName), esc(c.lastName), esc(c.fullName),
+      esc(c.phone), esc(c.email), esc(c.presentAddress), esc(c.permanentAddress),
+      esc(c.aadhaar), esc(c.pan), esc(c.digipin), esc(c.coordinates?.lat), esc(c.coordinates?.lng), esc(c.photo)
+    ].join(","));
+
+    return [headers.join(","), ...rows].join("\n");
+  }
+
+  function downloadCSV() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    const blob = new Blob([contactsToCSV(contacts)], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = getFilename("csv");
+    a.click();
+  }
+
+  function copyCSV() {
+    const contacts = getContacts();
+    if (!contacts.length) return alert("No contacts available!");
+    navigator.clipboard.writeText(contactsToCSV(contacts));
+    alert("CSV copied to clipboard!");
+  }
+
+  function deleteContact(id) {
+    if (confirm("Delete this contact?")) {
+      const updated = getContacts().filter(c => c.id !== id);
+      localStorage.setItem('saved_contacts', JSON.stringify(updated));
+      renderContacts();
+    }
+  }
+
+  const copySVG = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="12" height="12" rx="2.5" ry="2.5"></rect>
+      <path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-7A2.5 2.5 0 0 0 4 5.5v7A2.5 2.5 0 0 0 6.5 15H8"></path>
+    </svg>
+  `;
+
+  function renderContacts() {
+    const grid = document.getElementById('contactsGrid');
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const contacts = getContacts();
+
+    const filtered = contacts.filter(c => 
+      (c.fullName && c.fullName.toLowerCase().includes(query)) ||
+      (c.phone && c.phone.includes(query)) ||
+      (c.email && c.email.toLowerCase().includes(query))
+    );
+
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="empty-state">No contacts found.</div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(c => {
+      const fid = suffix => `f_${c.id}_${suffix}`;
+      const btnid = suffix => `btn_${c.id}_${suffix}`;
+
+      return `
+        <div class="contact-card">
+          <div class="card-header">
+            <img src="${c.photo || 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%2394a3b8\' viewBox=\'0 0 24 24\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'}" class="avatar">
+            <div>
+              <h3 class="contact-name">${c.fullName || 'Name'}</h3>
+              <small style="color:#64748b;">${c.phone || 'No Mobile'}</small>
+            </div>
+          </div>
+          <ul class="details-list">
+            <li>
+              <span class="field-label">Mobile:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('phone')}" data-real="${c.phone || ''}">${c.phone || 'N/A'}</span>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('phone')}')" title="Copy Mobile">${copySVG}</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Present Address:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('pres_addr')}" data-real="${c.presentAddress || ''}">${c.presentAddress || 'N/A'}</span>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('pres_addr')}')" title="Copy Present Address">${copySVG}</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Email:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('email')}" data-state="masked" data-real="${c.email || ''}" data-masked="${maskText(c.email, 'email')}">${maskText(c.email, 'email')}</span>
+                <button id="${btnid('email')}" class="btn-icon-action" onclick="toggleVisibility('${fid('email')}', '${btnid('email')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('email')}')" title="Copy Email">${copySVG}</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Aadhaar:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('aadhaar')}" data-state="masked" data-real="${c.aadhaar || ''}" data-masked="${maskText(c.aadhaar, 'aadhaar')}">${maskText(c.aadhaar, 'aadhaar')}</span>
+                <button id="${btnid('aadhaar')}" class="btn-icon-action" onclick="toggleVisibility('${fid('aadhaar')}', '${btnid('aadhaar')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('aadhaar')}')" title="Copy Aadhaar">${copySVG}</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">PAN:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('pan')}" data-state="masked" data-real="${c.pan || ''}" data-masked="${maskText(c.pan, 'pan')}">${maskText(c.pan, 'pan')}</span>
+                <button id="${btnid('pan')}" class="btn-icon-action" onclick="toggleVisibility('${fid('pan')}', '${btnid('pan')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('pan')}')" title="Copy PAN">${copySVG}</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">DIGIPIN:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('digipin')}" data-state="masked" data-real="${c.digipin || ''}" data-masked="${maskText(c.digipin, 'generic')}">${maskText(c.digipin, 'generic')}</span>
+                <button id="${btnid('digipin')}" class="btn-icon-action" onclick="toggleVisibility('${fid('digipin')}', '${btnid('digipin')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('digipin')}')" title="Copy DIGIPIN">${copySVG}</button>
+              </span>
+            </li>
+            <li>
+              <span class="field-label">Coordinates:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('coords')}" data-state="masked" data-real="${c.coordinates?.lat ? c.coordinates.lat + ', ' + c.coordinates.lng : ''}" data-masked="••••, ••••">••••, ••••</span>
+                <button id="${btnid('coords')}" class="btn-icon-action" onclick="toggleVisibility('${fid('coords')}', '${btnid('coords')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('coords')}')" title="Copy Coordinates">${copySVG}</button>
+              </span>
+            </li>
+            ${c.permanentAddress ? `
+            <li>
+              <span class="field-label">Perm. Address:</span>
+              <span class="field-value-wrap">
+                <span id="${fid('perm_addr')}" data-state="masked" data-real="${c.permanentAddress}" data-masked="••••••••">••••••••</span>
+                <button id="${btnid('perm_addr')}" class="btn-icon-action" onclick="toggleVisibility('${fid('perm_addr')}', '${btnid('perm_addr')}')">👁️</button>
+                <button class="btn-icon-action" onclick="copyValueById('${fid('perm_addr')}')" title="Copy Permanent Address">${copySVG}</button>
+              </span>
+            </li>` : ''}
+          </ul>
+          <div class="card-actions">
+            <a class="btn btn-secondary" href="form.html?id=${c.id}">Edit</a>
+            <button class="btn btn-danger" onclick="deleteContact('${c.id}')">Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', renderContacts);
+</script>
+</body>
+</html>

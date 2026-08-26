@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Record Navigator & Manager</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #22c55e;
+      --field-bg: #0f172a;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1150px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header & Action Toolbar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: #334155;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--primary);
+      color: #0f172a;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      color: #fff;
+    }
+
+    .badge {
+      background: var(--card-border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* Cards */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Grids */
+    .fields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    /* Field Items */
+    .field-item {
+      background: var(--field-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .field-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field-val {
+      font-size: 0.95rem;
+      font-weight: 600;
+      word-break: break-all;
+      color: var(--text);
+    }
+
+    /* Copy Button */
+    .copy-btn {
+      background: #334155;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      background: var(--primary);
+      color: #0f172a;
+    }
+
+    .copy-btn.copied {
+      background: var(--success);
+      color: #fff;
+    }
+
+    /* Navigator Bar */
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 20px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-indicator {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--primary);
+    }
+
+    select.row-selector {
+      background: var(--field-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      max-width: 260px;
+    }
+
+    /* Modal / Dialog */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 650px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 1.15rem;
+      color: var(--primary);
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    textarea.raw-input {
+      width: 100%;
+      height: 180px;
+      background: var(--field-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 12px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    .file-input-wrapper {
+      border: 2px dashed var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .file-input-wrapper:hover {
+      border-color: var(--primary);
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--success);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .shortcut-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div>
+        <h1>Data Record Navigator</h1>
+        <span class="badge" id="totalRecordsBadge">0 Records</span>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-primary" onclick="openImportModal()">📥 Load / Import Data</button>
+        <button class="btn" onclick="exportData('csv')">💾 Save CSV</button>
+        <button class="btn" onclick="exportData('json')">💾 Save JSON</button>
+      </div>
+    </header>
+
+    <section class="card" id="commonSection">
+      <div class="card-title">
+        <span>🔒 Shared / Constant Fields (Identical across all records)</span>
+      </div>
+      <div class="fields-grid" id="commonContainer">
+        </div>
+    </section>
+
+    <div class="nav-bar">
+      <div class="nav-controls">
+        <button class="btn" id="prevBtn" onclick="navigate(-1)">&#9664; Prev</button>
+        <button class="btn" id="nextBtn" onclick="navigate(1)">Next &#9654;</button>
+        <span class="nav-indicator" id="recordIndicator">Record 0 / 0</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="jumpSelect" style="font-size: 0.8rem; color: var(--text-muted);">Jump to:</label>
+        <select class="row-selector" id="jumpSelect" onchange="jumpTo(this.value)">
+          </select>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-title">
+        <span>📄 Active Record Fields (Distinct / Dynamic)</span>
+        <button class="copy-btn" onclick="copyEntireCurrentRow()">📋 Copy Full Row</button>
+      </div>
+      <div class="fields-grid" id="distinctContainer">
+        </div>
+    </section>
+
+    <div class="shortcut-hint">
+      Tip: Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> keyboard arrow keys to step through records.
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="importModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Load Raw Data / CSV / JSON</h2>
+        <button class="modal-close" onclick="closeImportModal()">&times;</button>
+      </div>
+
+      <div class="file-input-wrapper" onclick="document.getElementById('fileUpload').click()">
+        <span style="font-size: 0.9rem; color: var(--text-muted);">📁 Click here to upload a <b>.csv</b>, <b>.tsv</b>, <b>.txt</b>, or <b>.json</b> file</span>
+        <input type="file" id="fileUpload" accept=".csv,.tsv,.txt,.json" style="display:none;" onchange="handleFileUpload(event)">
+      </div>
+
+      <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">— OR PASTE DATA BELOW —</div>
+
+      <textarea class="raw-input" id="rawTextInput" placeholder="Paste Excel rows (Tab-separated), CSV text, or a JSON array of objects/arrays here..."></textarea>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn" onclick="loadSampleData()">Load Default Sample</button>
+        <button class="btn btn-primary" onclick="parseAndLoadText()">Apply & Load Data</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">Action completed!</div>
+
+  <script>
+    // Initial / Default Sample Data
+    const defaultSample = [
+      ["41", "1/29/2026", "J6736", "38", "364527423", "RDIPN", "012", "J6250", "100", "F26012912053244366AP", "400887152", "004", "100", "20196744855", "020196744855", "IN4151646", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196744855", "020196744855", "THOTAPALLI", "RD"],
+      ["42", "1/29/2026", "J6736", "39", "364527423", "RDIPN", "012", "J6250", "100", "F26012912073307423AP", "400887152", "004", "100", "20196746527", "020196746527", "IN4160346", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196746527", "020196746527", "THOTAPALLI", "RD"],
+      ["43", "1/29/2026", "J6736", "40", "364527423", "RDIPN", "012", "J6250", "100", "F26012912093941541AP", "400887152", "004", "100", "20196747503", "020196747503", "IN4168211", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196747503", "020196747503", "THOTAPALLI", "RD"],
+      ["44", "1/29/2026", "J6736", "41", "364527423", "RDIPN", "012", "J6250", "100", "F26012912112122543AP", "400887152", "004", "100", "20196749050", "020196749050", "IN4176572", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196749050", "020196749050", "THOTAPALLI", "RD"],
+      ["45", "1/29/2026", "J6736", "42", "364527423", "RDIPN", "012", "J6250", "100", "F26012912130830342AP", "400887152", "004", "100", "20196750056", "020196750056", "IN4187222", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196750056", "020196750056", "THOTAPALLI", "RD"],
+      ["46", "1/29/2026", "J6736", "43", "342185073", "RDIPN", "012", "J6250", "100", "F26012912184268300AP", "357347874", "018", "100", "20196753037", "020196753037", "IN4210278", "Thursday, January 29, 2026", "D JYOTHI", "020196753037", "020196753037", "THOTAPALLI", "RD"],
+      ["47", "1/29/2026", "J6736", "44", "342185073", "RDIPN", "012", "J6250", "100", "F26012912271460017AP", "357347874", "018", "100", "20196753471", "020196753471", "IN4220657", "Thursday, January 29, 2026", "D JYOTHI", "020196753471", "020196753471", "THOTAPALLI", "RD"],
+      ["48", "1/29/2026", "J6736", "45", "342185073", "RDIPN", "012", "J6250", "100", "F26012912290888868AP", "357347874", "018", "100", "20196754885", "020196754885", "IN4231597", "Thursday, January 29, 2026", "D JYOTHI", "020196754885", "020196754885", "THOTAPALLI", "RD"],
+      ["49", "1/29/2026", "J6736", "46", "342185073", "RDIPN", "012", "J6250", "100", "F26012912302004411AP", "357347874", "018", "100", "20196757658", "020196757658", "IN4240810", "Thursday, January 29, 2026", "D JYOTHI", "020196757658", "020196757658", "THOTAPALLI", "RD"],
+      ["50", "1/29/2026", "J6736", "47", "342185073", "RDIPN", "012", "J6250", "100", "F26012912314281460AP", "357347874", "018", "100", "20196758384", "020196758384", "IN4256718", "Thursday, January 29, 2026", "D JYOTHI", "020196758384", "020196758384", "THOTAPALLI", "RD"]
+    ];
+
+    const defaultHeaders = [
+      "Sl No", "Date", "User ID", "Token No", "Account / Ref 1",
+      "Type", "Sub-Code", "Terminal ID", "Amount 1", "Transaction ID",
+      "Customer ID / CIF", "Branch Batch", "Amount 2", "Txn Ref Num", "Primary Account",
+      "Voucher Code", "Full Date", "Customer Name", "Account Alias 1", "Account Alias 2",
+      "Branch Location", "Scheme Code"
+    ];
+
+    // State Variables
+    let rawData = [];
+    let columnLabels = [];
+    let currentIndex = 0;
+    let commonColIndices = [];
+    let distinctColIndices = [];
+
+    // Initialize application
+    function initApp(data, headers = null) {
+      if (!data || data.length === 0) return;
+      rawData = data;
+      
+      if (headers && headers.length === data[0].length) {
+        columnLabels = headers;
+      } else {
+        columnLabels = defaultHeaders.slice(0, data[0].length);
+        while (columnLabels.length < data[0].length) {
+          columnLabels.push(`Field ${columnLabels.length + 1}`);
+        }
+      }
+
+      currentIndex = 0;
+      analyzeColumns();
+      renderCommonFields();
+      initJumpDropdown();
+      renderCurrentRecord();
+      
+      document.getElementById("totalRecordsBadge").innerText = `${rawData.length} Records Loaded`;
+    }
+
+    // Split common vs. distinct fields
+    function analyzeColumns() {
+      const numCols = rawData[0].length;
+      commonColIndices = [];
+      distinctColIndices = [];
+
+      for (let c = 0; c < numCols; c++) {
+        const firstVal = rawData[0][c];
+        const isCommon = rawData.every(row => row[c] === firstVal);
+        if (isCommon) {
+          commonColIndices.push(c);
+        } else {
+          distinctColIndices.push(c);
+        }
+      }
+    }
+
+    // Render Shared Constant Fields
+    function renderCommonFields() {
+      const container = document.getElementById("commonContainer");
+      const commonSection = document.getElementById("commonSection");
+      container.innerHTML = "";
+
+      if (commonColIndices.length === 0) {
+        commonSection.style.display = "none";
+        return;
+      }
+
+      commonSection.style.display = "block";
+      commonColIndices.forEach(colIdx => {
+        const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+        const val = rawData[0][colIdx] ?? "";
+
+        const item = document.createElement("div");
+        item.className = "field-item";
+        item.innerHTML = `
+          <div class="field-label">${escapeHtml(label)}</div>
+          <div class="field-body">
+            <span class="field-val">${escapeHtml(val)}</span>
+            <button class="copy-btn" onclick="copyText('${escapeJs(val)}', this)">Copy</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    // Render Active Distinct Record
+    function renderCurrentRecord() {
+      const container = document.getElementById("distinctContainer");
+      container.innerHTML = "";
+      const row = rawData[currentIndex] || [];
+
+      distinctColIndices.forEach(colIdx => {
+        const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+        const val = row[colIdx] ?? "";
+
+        const item = document.createElement("div");
+        item.className = "field-item";
+        item.innerHTML = `
+          <div class="field-label">${escapeHtml(label)}</div>
+          <div class="field-body">
+            <span class="field-val">${escapeHtml(val)}</span>
+            <button class="copy-btn" onclick="copyText('${escapeJs(val)}', this)">Copy</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      // Update Controls
+      document.getElementById("recordIndicator").innerText = `Record ${currentIndex + 1} / ${rawData.length}`;
+      document.getElementById("jumpSelect").value = currentIndex;
+      document.getElementById("prevBtn").disabled = currentIndex === 0;
+      document.getElementById("nextBtn").disabled = currentIndex === rawData.length - 1;
+    }
+
+    // Jump Dropdown setup
+    function initJumpDropdown() {
+      const select = document.getElementById("jumpSelect");
+      select.innerHTML = "";
+      rawData.forEach((row, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        const preview = row[0] ? `#${row[0]}` : `Row ${idx + 1}`;
+        const namePreview = row[17] || row[1] || "";
+        opt.innerText = `${preview} ${namePreview ? "- " + namePreview : ""}`;
+        select.appendChild(opt);
+      });
+    }
+
+    // Navigation
+    function navigate(delta) {
+      const newIdx = currentIndex + delta;
+      if (newIdx >= 0 && newIdx < rawData.length) {
+        currentIndex = newIdx;
+        renderCurrentRecord();
+      }
+    }
+
+    function jumpTo(index) {
+      currentIndex = parseInt(index, 10);
+      renderCurrentRecord();
+    }
+
+    // Copy to clipboard
+    function copyText(text, btnElement) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Copied: "${text}"`);
+        if (btnElement) {
+          const orig = btnElement.innerText;
+          btnElement.innerText = "Copied! ✓";
+          btnElement.classList.add("copied");
+          setTimeout(() => {
+            btnElement.innerText = orig;
+            btnElement.classList.remove("copied");
+          }, 1200);
+        }
+      });
+    }
+
+    function copyEntireCurrentRow() {
+      const row = rawData[currentIndex];
+      const text = row.join("\t");
+      copyText(text, null);
+      showToast(`Copied full row #${row[0] || (currentIndex + 1)} (Tab-Separated)`);
+    }
+
+    // Toast
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    // Modal Handlers
+    function openImportModal() {
+      document.getElementById("importModal").classList.add("active");
+    }
+
+    function closeImportModal() {
+      document.getElementById("importModal").classList.remove("active");
+    }
+
+    // Load Default Data
+    function loadSampleData() {
+      initApp(defaultSample, defaultHeaders);
+      closeImportModal();
+      showToast("Default sample data loaded!");
+    }
+
+    // Universal Text Parser (TSV, CSV, or JSON)
+    function parseAndLoadText() {
+      let raw = document.getElementById("rawTextInput").value.trim();
+      if (!raw) return;
+
+      // Check if user enclosed within bracket notation [ ... ]
+      if (raw.startsWith("[") && raw.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            processParsedJson(parsed);
+            closeImportModal();
+            return;
+          }
+        } catch(e) {
+          // If JSON.parse fails, strip outer brackets and parse as lines
+          raw = raw.substring(1, raw.length - 1).trim();
+        }
+      }
+
+      // Check standard JSON
+      if (raw.startsWith("{") || raw.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(raw);
+          processParsedJson(parsed);
+          closeImportModal();
+          return;
+        } catch(e) {}
+      }
+
+      // Parse as CSV / TSV
+      const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) return;
+
+      // Auto-detect delimiter
+      const firstLine = lines[0];
+      const delimiter = firstLine.includes("\t") ? "\t" : ",";
+
+      const matrix = lines.map(line => {
+        if (delimiter === "\t") {
+          return line.split("\t").map(v => v.trim());
+        } else {
+          // Simple CSV splitter
+          return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
+        }
+      });
+
+      initApp(matrix);
+      closeImportModal();
+      showToast(`Loaded ${matrix.length} records!`);
+    }
+
+    function processParsedJson(parsed) {
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        alert("Invalid JSON format. Expected an array of objects or an array of rows.");
+        return;
+      }
+
+      if (Array.isArray(parsed[0])) {
+        initApp(parsed);
+      } else if (typeof parsed[0] === 'object') {
+        const keys = Object.keys(parsed[0]);
+        const matrix = parsed.map(obj => keys.map(k => String(obj[k] ?? '')));
+        initApp(matrix, keys);
+      }
+      showToast(`Loaded ${parsed.length} JSON records!`);
+    }
+
+    // File Upload Handler
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById("rawTextInput").value = e.target.result;
+        parseAndLoadText();
+      };
+      reader.readAsText(file);
+    }
+
+    // Export Data (Save CSV / Save JSON)
+    function exportData(format) {
+      if (!rawData || rawData.length === 0) {
+        alert("No data available to export.");
+        return;
+      }
+
+      let content = "";
+      let filename = `export_${new Date().toISOString().slice(0,10)}`;
+      let mimeType = "";
+
+      if (format === 'csv') {
+        filename += ".csv";
+        mimeType = "text/csv;charset=utf-8;";
+        const csvRows = [
+          columnLabels.slice(0, rawData[0].length).map(h => `"${h.replace(/"/g, '""')}"`).join(","),
+          ...rawData.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+        ];
+        content = csvRows.join("\r\n");
+      } else if (format === 'json') {
+        filename += ".json";
+        mimeType = "application/json;charset=utf-8;";
+        // Convert to array of objects with header keys
+        const headers = columnLabels.slice(0, rawData[0].length);
+        const jsonObjects = rawData.map(row => {
+          let obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = row[i] ?? "";
+          });
+          return obj;
+        });
+        content = JSON.stringify(jsonObjects, null, 2);
+      }
+
+      // Download file blob
+      const blob = new Blob([content], { type: mimeType });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
+    }
+
+    // Helpers
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeJs(str) {
+      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener("keydown", (e) => {
+      if (document.getElementById("importModal").classList.contains("active")) return;
+      if (e.key === "ArrowLeft") navigate(-1);
+      if (e.key === "ArrowRight") navigate(1);
+    });
+
+    // Start with default sample loaded
+    initApp(defaultSample, defaultHeaders);
+  </script>
+</body>
+</html>
