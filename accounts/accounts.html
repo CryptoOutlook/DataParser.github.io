@@ -39,7 +39,7 @@
 
     .container {
       width: 100%;
-      max-width: 1150px;
+      max-width: 1200px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -135,10 +135,26 @@
       justify-content: space-between;
     }
 
+    /* Empty Placeholder */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .empty-state h3 {
+      color: var(--text);
+      font-size: 1.1rem;
+    }
+
     /* Grids */
     .fields-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 12px;
     }
 
@@ -152,6 +168,7 @@
       flex-direction: column;
       justify-content: space-between;
       gap: 6px;
+      min-height: 72px;
     }
 
     .field-label {
@@ -168,10 +185,16 @@
     }
 
     .field-val {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 600;
       word-break: break-all;
       color: var(--text);
+    }
+
+    .field-val.empty {
+      color: var(--card-border);
+      font-style: italic;
+      font-weight: 400;
     }
 
     /* Copy Button */
@@ -235,7 +258,7 @@
       font-weight: 600;
       outline: none;
       cursor: pointer;
-      max-width: 260px;
+      max-width: 320px;
     }
 
     /* Modal / Dialog */
@@ -263,7 +286,7 @@
       border: 1px solid var(--card-border);
       border-radius: 14px;
       width: 100%;
-      max-width: 650px;
+      max-width: 680px;
       padding: 24px;
       display: flex;
       flex-direction: column;
@@ -359,44 +382,54 @@
 
       <div class="action-bar">
         <button class="btn btn-primary" onclick="openImportModal()">📥 Load / Import Data</button>
-        <button class="btn" onclick="exportData('csv')">💾 Save CSV</button>
-        <button class="btn" onclick="exportData('json')">💾 Save JSON</button>
+        <button class="btn" id="saveCsvBtn" onclick="exportData('csv')" disabled>💾 Save CSV</button>
+        <button class="btn" id="saveJsonBtn" onclick="exportData('json')" disabled>💾 Save JSON</button>
       </div>
     </header>
 
-    <section class="card" id="commonSection">
-      <div class="card-title">
-        <span>🔒 Shared / Constant Fields (Identical across all records)</span>
-      </div>
-      <div class="fields-grid" id="commonContainer">
-        </div>
-    </section>
-
-    <div class="nav-bar">
-      <div class="nav-controls">
-        <button class="btn" id="prevBtn" onclick="navigate(-1)">&#9664; Prev</button>
-        <button class="btn" id="nextBtn" onclick="navigate(1)">Next &#9654;</button>
-        <span class="nav-indicator" id="recordIndicator">Record 0 / 0</span>
-      </div>
-
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <label for="jumpSelect" style="font-size: 0.8rem; color: var(--text-muted);">Jump to:</label>
-        <select class="row-selector" id="jumpSelect" onchange="jumpTo(this.value)">
-          </select>
-      </div>
+    <div id="emptyView" class="card empty-state">
+      <div style="font-size: 2.5rem;">📂</div>
+      <h3>No Data Loaded</h3>
+      <p>Import Excel data, paste CSV/TSV records, or upload a JSON/CSV file to begin.</p>
+      <button class="btn btn-primary" style="margin-top: 8px;" onclick="openImportModal()">📥 Load Data Now</button>
     </div>
 
-    <section class="card">
-      <div class="card-title">
-        <span>📄 Active Record Fields (Distinct / Dynamic)</span>
-        <button class="copy-btn" onclick="copyEntireCurrentRow()">📋 Copy Full Row</button>
-      </div>
-      <div class="fields-grid" id="distinctContainer">
+    <div id="mainView" style="display: none; flex-direction: column; gap: 20px;">
+      
+      <section class="card" id="commonSection">
+        <div class="card-title">
+          <span>🔒 Shared / Constant Fields (Identical across all records)</span>
         </div>
-    </section>
+        <div class="fields-grid" id="commonContainer">
+          </div>
+      </section>
 
-    <div class="shortcut-hint">
-      Tip: Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> keyboard arrow keys to step through records.
+      <div class="nav-bar">
+        <div class="nav-controls">
+          <button class="btn" id="prevBtn" onclick="navigate(-1)">&#9664; Prev</button>
+          <button class="btn" id="nextBtn" onclick="navigate(1)">Next &#9654;</button>
+          <span class="nav-indicator" id="recordIndicator">Record 0 / 0</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="jumpSelect" style="font-size: 0.8rem; color: var(--text-muted);">Jump to:</label>
+          <select class="row-selector" id="jumpSelect" onchange="jumpTo(this.value)">
+            </select>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="card-title">
+          <span>📄 Active Record Fields (Distinct / Dynamic)</span>
+          <button class="copy-btn" onclick="copyEntireCurrentRow()">📋 Copy Full Row</button>
+        </div>
+        <div class="fields-grid" id="distinctContainer">
+          </div>
+      </section>
+
+      <div class="shortcut-hint">
+        Tip: Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> keyboard arrow keys to step through records.
+      </div>
     </div>
   </div>
 
@@ -414,10 +447,12 @@
 
       <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">— OR PASTE DATA BELOW —</div>
 
-      <textarea class="raw-input" id="rawTextInput" placeholder="Paste Excel rows (Tab-separated), CSV text, or a JSON array of objects/arrays here..."></textarea>
+      <textarea class="raw-input" id="rawTextInput" placeholder="Paste Excel rows (Tab-separated), CSV text, or a JSON array..."></textarea>
 
-      <div style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="btn" onclick="loadSampleData()">Load Default Sample</button>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <label style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="checkbox" id="headerCheckbox" checked> First row contains column headers
+        </label>
         <button class="btn btn-primary" onclick="parseAndLoadText()">Apply & Load Data</button>
       </div>
     </div>
@@ -426,28 +461,6 @@
   <div id="toast">Action completed!</div>
 
   <script>
-    // Initial / Default Sample Data
-    const defaultSample = [
-      ["41", "1/29/2026", "J6736", "38", "364527423", "RDIPN", "012", "J6250", "100", "F26012912053244366AP", "400887152", "004", "100", "20196744855", "020196744855", "IN4151646", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196744855", "020196744855", "THOTAPALLI", "RD"],
-      ["42", "1/29/2026", "J6736", "39", "364527423", "RDIPN", "012", "J6250", "100", "F26012912073307423AP", "400887152", "004", "100", "20196746527", "020196746527", "IN4160346", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196746527", "020196746527", "THOTAPALLI", "RD"],
-      ["43", "1/29/2026", "J6736", "40", "364527423", "RDIPN", "012", "J6250", "100", "F26012912093941541AP", "400887152", "004", "100", "20196747503", "020196747503", "IN4168211", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196747503", "020196747503", "THOTAPALLI", "RD"],
-      ["44", "1/29/2026", "J6736", "41", "364527423", "RDIPN", "012", "J6250", "100", "F26012912112122543AP", "400887152", "004", "100", "20196749050", "020196749050", "IN4176572", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196749050", "020196749050", "THOTAPALLI", "RD"],
-      ["45", "1/29/2026", "J6736", "42", "364527423", "RDIPN", "012", "J6250", "100", "F26012912130830342AP", "400887152", "004", "100", "20196750056", "020196750056", "IN4187222", "Thursday, January 29, 2026", "B VAMSI KRISHNA", "020196750056", "020196750056", "THOTAPALLI", "RD"],
-      ["46", "1/29/2026", "J6736", "43", "342185073", "RDIPN", "012", "J6250", "100", "F26012912184268300AP", "357347874", "018", "100", "20196753037", "020196753037", "IN4210278", "Thursday, January 29, 2026", "D JYOTHI", "020196753037", "020196753037", "THOTAPALLI", "RD"],
-      ["47", "1/29/2026", "J6736", "44", "342185073", "RDIPN", "012", "J6250", "100", "F26012912271460017AP", "357347874", "018", "100", "20196753471", "020196753471", "IN4220657", "Thursday, January 29, 2026", "D JYOTHI", "020196753471", "020196753471", "THOTAPALLI", "RD"],
-      ["48", "1/29/2026", "J6736", "45", "342185073", "RDIPN", "012", "J6250", "100", "F26012912290888868AP", "357347874", "018", "100", "20196754885", "020196754885", "IN4231597", "Thursday, January 29, 2026", "D JYOTHI", "020196754885", "020196754885", "THOTAPALLI", "RD"],
-      ["49", "1/29/2026", "J6736", "46", "342185073", "RDIPN", "012", "J6250", "100", "F26012912302004411AP", "357347874", "018", "100", "20196757658", "020196757658", "IN4240810", "Thursday, January 29, 2026", "D JYOTHI", "020196757658", "020196757658", "THOTAPALLI", "RD"],
-      ["50", "1/29/2026", "J6736", "47", "342185073", "RDIPN", "012", "J6250", "100", "F26012912314281460AP", "357347874", "018", "100", "20196758384", "020196758384", "IN4256718", "Thursday, January 29, 2026", "D JYOTHI", "020196758384", "020196758384", "THOTAPALLI", "RD"]
-    ];
-
-    const defaultHeaders = [
-      "Sl No", "Date", "User ID", "Token No", "Account / Ref 1",
-      "Type", "Sub-Code", "Terminal ID", "Amount 1", "Transaction ID",
-      "Customer ID / CIF", "Branch Batch", "Amount 2", "Txn Ref Num", "Primary Account",
-      "Voucher Code", "Full Date", "Customer Name", "Account Alias 1", "Account Alias 2",
-      "Branch Location", "Scheme Code"
-    ];
-
     // State Variables
     let rawData = [];
     let columnLabels = [];
@@ -455,18 +468,23 @@
     let commonColIndices = [];
     let distinctColIndices = [];
 
-    // Initialize application
+    // Initialize/Refresh application state
     function initApp(data, headers = null) {
-      if (!data || data.length === 0) return;
+      if (!data || data.length === 0) {
+        document.getElementById("emptyView").style.display = "flex";
+        document.getElementById("mainView").style.display = "none";
+        document.getElementById("saveCsvBtn").disabled = true;
+        document.getElementById("saveJsonBtn").disabled = true;
+        document.getElementById("totalRecordsBadge").innerText = `0 Records`;
+        return;
+      }
+
       rawData = data;
       
       if (headers && headers.length === data[0].length) {
         columnLabels = headers;
       } else {
-        columnLabels = defaultHeaders.slice(0, data[0].length);
-        while (columnLabels.length < data[0].length) {
-          columnLabels.push(`Field ${columnLabels.length + 1}`);
-        }
+        columnLabels = data[0].map((_, i) => `Column ${i + 1}`);
       }
 
       currentIndex = 0;
@@ -475,6 +493,11 @@
       initJumpDropdown();
       renderCurrentRecord();
       
+      // Update UI visibility
+      document.getElementById("emptyView").style.display = "none";
+      document.getElementById("mainView").style.display = "flex";
+      document.getElementById("saveCsvBtn").disabled = false;
+      document.getElementById("saveJsonBtn").disabled = false;
       document.getElementById("totalRecordsBadge").innerText = `${rawData.length} Records Loaded`;
     }
 
@@ -485,8 +508,8 @@
       distinctColIndices = [];
 
       for (let c = 0; c < numCols; c++) {
-        const firstVal = rawData[0][c];
-        const isCommon = rawData.every(row => row[c] === firstVal);
+        const firstVal = (rawData[0][c] || "").trim();
+        const isCommon = rawData.every(row => (row[c] || "").trim() === firstVal);
         if (isCommon) {
           commonColIndices.push(c);
         } else {
@@ -510,13 +533,14 @@
       commonColIndices.forEach(colIdx => {
         const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
         const val = rawData[0][colIdx] ?? "";
+        const isEmpty = val.trim() === "";
 
         const item = document.createElement("div");
         item.className = "field-item";
         item.innerHTML = `
           <div class="field-label">${escapeHtml(label)}</div>
           <div class="field-body">
-            <span class="field-val">${escapeHtml(val)}</span>
+            <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
             <button class="copy-btn" onclick="copyText('${escapeJs(val)}', this)">Copy</button>
           </div>
         `;
@@ -533,13 +557,14 @@
       distinctColIndices.forEach(colIdx => {
         const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
         const val = row[colIdx] ?? "";
+        const isEmpty = val.trim() === "";
 
         const item = document.createElement("div");
         item.className = "field-item";
         item.innerHTML = `
           <div class="field-label">${escapeHtml(label)}</div>
           <div class="field-body">
-            <span class="field-val">${escapeHtml(val)}</span>
+            <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
             <button class="copy-btn" onclick="copyText('${escapeJs(val)}', this)">Copy</button>
           </div>
         `;
@@ -557,12 +582,19 @@
     function initJumpDropdown() {
       const select = document.getElementById("jumpSelect");
       select.innerHTML = "";
+      
+      const snoIdx = columnLabels.findIndex(h => /s\.?no|sl/i.test(h));
+      const nameIdx = columnLabels.findIndex(h => /name/i.test(h));
+      const accIdx = columnLabels.findIndex(h => /acc|ac_num|account/i.test(h));
+
       rawData.forEach((row, idx) => {
         const opt = document.createElement("option");
         opt.value = idx;
-        const preview = row[0] ? `#${row[0]}` : `Row ${idx + 1}`;
-        const namePreview = row[17] || row[1] || "";
-        opt.innerText = `${preview} ${namePreview ? "- " + namePreview : ""}`;
+        const sno = (snoIdx !== -1 && row[snoIdx]) ? `#${row[snoIdx]}` : `#${idx + 1}`;
+        const name = (nameIdx !== -1 && row[nameIdx]) ? ` - ${row[nameIdx]}` : '';
+        const acc = (accIdx !== -1 && row[accIdx]) ? ` (${row[accIdx]})` : '';
+        
+        opt.innerText = `${sno}${name}${acc}`;
         select.appendChild(opt);
       });
     }
@@ -601,7 +633,7 @@
       const row = rawData[currentIndex];
       const text = row.join("\t");
       copyText(text, null);
-      showToast(`Copied full row #${row[0] || (currentIndex + 1)} (Tab-Separated)`);
+      showToast(`Copied row #${currentIndex + 1} (Tab-Separated)`);
     }
 
     // Toast
@@ -621,19 +653,13 @@
       document.getElementById("importModal").classList.remove("active");
     }
 
-    // Load Default Data
-    function loadSampleData() {
-      initApp(defaultSample, defaultHeaders);
-      closeImportModal();
-      showToast("Default sample data loaded!");
-    }
-
-    // Universal Text Parser (TSV, CSV, or JSON)
+    // Intelligent Text Parser
     function parseAndLoadText() {
       let raw = document.getElementById("rawTextInput").value.trim();
+      const userHeaderToggle = document.getElementById("headerCheckbox").checked;
       if (!raw) return;
 
-      // Check if user enclosed within bracket notation [ ... ]
+      // Handle Bracketed Array Input: [ ... ]
       if (raw.startsWith("[") && raw.endsWith("]")) {
         try {
           const parsed = JSON.parse(raw);
@@ -643,12 +669,11 @@
             return;
           }
         } catch(e) {
-          // If JSON.parse fails, strip outer brackets and parse as lines
           raw = raw.substring(1, raw.length - 1).trim();
         }
       }
 
-      // Check standard JSON
+      // Handle JSON Input
       if (raw.startsWith("{") || raw.startsWith("[")) {
         try {
           const parsed = JSON.parse(raw);
@@ -658,26 +683,37 @@
         } catch(e) {}
       }
 
-      // Parse as CSV / TSV
+      // Parse Delimited Text (TSV / CSV)
+      parseRawDataString(raw, userHeaderToggle);
+      closeImportModal();
+    }
+
+    function parseRawDataString(raw, firstRowIsHeader) {
       const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
       if (lines.length === 0) return;
 
-      // Auto-detect delimiter
-      const firstLine = lines[0];
-      const delimiter = firstLine.includes("\t") ? "\t" : ",";
+      const delimiter = lines[0].includes("\t") ? "\t" : ",";
 
       const matrix = lines.map(line => {
         if (delimiter === "\t") {
           return line.split("\t").map(v => v.trim());
         } else {
-          // Simple CSV splitter
           return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
         }
       });
 
-      initApp(matrix);
-      closeImportModal();
-      showToast(`Loaded ${matrix.length} records!`);
+      let headers = null;
+      let dataRows = matrix;
+
+      const looksLikeHeader = isNaN(Number(matrix[0][0])) && isNaN(Date.parse(matrix[0][0]));
+
+      if (firstRowIsHeader || looksLikeHeader) {
+        headers = matrix[0];
+        dataRows = matrix.slice(1);
+      }
+
+      initApp(dataRows, headers);
+      showToast(`Loaded ${dataRows.length} records!`);
     }
 
     function processParsedJson(parsed) {
@@ -725,13 +761,12 @@
         mimeType = "text/csv;charset=utf-8;";
         const csvRows = [
           columnLabels.slice(0, rawData[0].length).map(h => `"${h.replace(/"/g, '""')}"`).join(","),
-          ...rawData.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+          ...rawData.map(row => row.map(val => `"${String(val ?? '').replace(/"/g, '""')}"`).join(","))
         ];
         content = csvRows.join("\r\n");
       } else if (format === 'json') {
         filename += ".json";
         mimeType = "application/json;charset=utf-8;";
-        // Convert to array of objects with header keys
         const headers = columnLabels.slice(0, rawData[0].length);
         const jsonObjects = rawData.map(row => {
           let obj = {};
@@ -743,7 +778,6 @@
         content = JSON.stringify(jsonObjects, null, 2);
       }
 
-      // Download file blob
       const blob = new Blob([content], { type: mimeType });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
@@ -765,15 +799,15 @@
       return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
     }
 
-    // Keyboard Shortcuts
+    // Keyboard Shortcuts (Left / Right Arrows)
     document.addEventListener("keydown", (e) => {
       if (document.getElementById("importModal").classList.contains("active")) return;
       if (e.key === "ArrowLeft") navigate(-1);
       if (e.key === "ArrowRight") navigate(1);
     });
 
-    // Start with default sample loaded
-    initApp(defaultSample, defaultHeaders);
+    // Start in clean empty state
+    initApp([]);
   </script>
 </body>
 </html>
