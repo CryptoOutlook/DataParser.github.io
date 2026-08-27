@@ -18,7 +18,6 @@
       --success: #22c55e;
       --field-bg: #0f172a;
       --danger: #ef4444;
-      --warning: #f59e0b;
     }
 
     * {
@@ -106,17 +105,6 @@
       color: #fff;
     }
 
-    .btn-danger {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: var(--danger);
-      color: #fca5a5;
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      background: var(--danger);
-      color: #fff;
-    }
-
     .badge {
       background: var(--card-border);
       color: var(--text);
@@ -124,12 +112,6 @@
       border-radius: 9999px;
       font-size: 0.8rem;
       font-weight: 600;
-    }
-
-    .badge-success {
-      background: rgba(34, 197, 94, 0.15);
-      color: var(--success);
-      border: 1px solid rgba(34, 197, 94, 0.3);
     }
 
     /* Cards */
@@ -224,7 +206,6 @@
       gap: 4px;
     }
 
-    /* Action Buttons inside cards */
     .icon-btn {
       background: #334155;
       border: none;
@@ -251,7 +232,7 @@
       color: #fff;
     }
 
-    /* Inline Editor View */
+    /* Inline Editor */
     .inline-edit-box {
       display: flex;
       flex-direction: column;
@@ -312,6 +293,21 @@
       outline: none;
       cursor: pointer;
       max-width: 320px;
+    }
+
+    /* Radio Group Styling */
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .radio-label input {
+      accent-color: var(--accent);
+      cursor: pointer;
     }
 
     /* Modals */
@@ -423,57 +419,6 @@
       background: #334155;
     }
 
-    /* History Table View */
-    .history-list {
-      overflow-y: auto;
-      max-height: 400px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding-right: 4px;
-    }
-
-    .history-card {
-      background: var(--field-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 10px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .history-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 0.85rem;
-    }
-
-    .history-time {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-    }
-
-    .history-diff {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: monospace;
-      font-size: 0.82rem;
-    }
-
-    .diff-old {
-      color: #f87171;
-      text-decoration: line-through;
-    }
-
-    .diff-new {
-      color: #4ade80;
-      font-weight: 600;
-    }
-
     /* Toast */
     #toast {
       position: fixed;
@@ -514,13 +459,753 @@
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
           <span class="badge" id="totalRecordsBadge">0 Records</span>
           <span class="badge" id="visibleColsBadge">0 Columns</span>
-          <span class="badge badge-success" id="autoSaveBadge">💾 Session Active</span>
         </div>
       </div>
 
       <div class="action-bar">
         <button class="btn btn-primary" onclick="openImportModal()">📥 Load Data</button>
-        <button class="btn" id="historyBtn" onclick="openHistoryModal()" disabled>📜 History (0)</button>
+        <button class="btn" id="addRowBtn" onclick="openAddRowModal()" disabled>➕ Add Row</button>
         <button class="btn" id="colManagerBtn" onclick="openColumnModal()" disabled>👁️ Columns</button>
         <button class="btn" id="saveCsvBtn" onclick="exportData('csv')" disabled>💾 Save CSV</button>
-        <button class="btn" id="saveJsonBtn" onclick="export
+        <button class="btn" id="saveJsonBtn" onclick="exportData('json')" disabled>💾 Save JSON</button>
+      </div>
+    </header>
+
+    <div id="emptyView" class="card empty-state">
+      <div style="font-size: 2.5rem;">📂</div>
+      <h3>No Data Loaded</h3>
+      <p>Import Excel rows, paste CSV/TSV records, or upload a JSON/CSV file to begin.</p>
+      <button class="btn btn-primary" style="margin-top: 8px;" onclick="openImportModal()">📥 Load Data Now</button>
+    </div>
+
+    <div id="mainView" style="display: none; flex-direction: column; gap: 20px;">
+      
+      <section class="card" id="commonSection">
+        <div class="card-title">
+          <span>🔒 Shared / Constant Fields (Identical across all records)</span>
+        </div>
+        <div class="fields-grid" id="commonContainer">
+          </div>
+      </section>
+
+      <div class="nav-bar">
+        <div class="nav-controls">
+          <button class="btn" id="prevBtn" onclick="navigate(-1)">&#9664; Prev</button>
+          <button class="btn" id="nextBtn" onclick="navigate(1)">Next &#9654;</button>
+          <span class="nav-indicator" id="recordIndicator">Record 0 / 0</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="jumpSelect" style="font-size: 0.8rem; color: var(--text-muted);">Jump to:</label>
+          <select class="row-selector" id="jumpSelect" onchange="jumpTo(this.value)">
+            </select>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="card-title">
+          <span>📄 Active Record Fields (Distinct / Dynamic)</span>
+          <button class="icon-btn" onclick="copyEntireCurrentRow()">📋 Copy Full Row</button>
+        </div>
+        <div class="fields-grid" id="distinctContainer">
+          </div>
+      </section>
+
+      <div class="shortcut-hint">
+        Tip: Click <b>✏️</b> to edit values in-place. Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> to step through records.
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="importModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Load Raw Data / CSV / JSON</h2>
+        <button class="modal-close" onclick="closeImportModal()">&times;</button>
+      </div>
+
+      <div class="file-input-wrapper" onclick="document.getElementById('fileUpload').click()">
+        <span style="font-size: 0.9rem; color: var(--text-muted);">📁 Click here to upload a <b>.csv</b>, <b>.tsv</b>, <b>.txt</b>, or <b>.json</b> file</span>
+        <input type="file" id="fileUpload" accept=".csv,.tsv,.txt,.json" style="display:none;" onchange="handleFileUpload(event)">
+      </div>
+
+      <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">— OR PASTE DATA BELOW —</div>
+
+      <textarea class="raw-input" id="rawTextInput" placeholder="Paste Excel rows (Tab-separated), CSV text, or a JSON array..."></textarea>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <label style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="checkbox" id="headerCheckbox" checked> First row contains column headers
+        </label>
+        <button class="btn btn-primary" onclick="parseAndLoadText()">Apply & Load Data</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="addRowModal">
+    <div class="modal" style="max-width: 550px;">
+      <div class="modal-header">
+        <h2>Add New Record</h2>
+        <button class="modal-close" onclick="closeAddRowModal()">&times;</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 8px; font-weight: 600;">Default Data Source:</label>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <label class="radio-label">
+              <input type="radio" name="newRowSource" value="current" checked onchange="updateAddRowUI()"> Duplicate active record (<span id="activeRecordLabel" style="color: var(--primary);">#1</span>)
+            </label>
+            
+            <label class="radio-label">
+              <input type="radio" name="newRowSource" value="specific" onchange="updateAddRowUI()"> Copy from specific record:
+            </label>
+            <select class="row-selector" id="specificRecordSelect" style="max-width: 100%; margin-left: 22px; display: none;">
+              </select>
+
+            <label class="radio-label">
+              <input type="radio" name="newRowSource" value="empty" onchange="updateAddRowUI()"> Create blank / empty record
+            </label>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--card-border); padding-top: 14px;">
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 8px; font-weight: 600;">Insert Position:</label>
+          <div style="display: flex; gap: 20px;">
+            <label class="radio-label">
+              <input type="radio" name="newRowPos" value="end" checked> At the end
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="newRowPos" value="after"> After active record
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+        <button class="btn" onclick="closeAddRowModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="confirmAddRow()">➕ Create Record</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="columnModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Manage Visible Fields</h2>
+        <button class="modal-close" onclick="closeColumnModal()">&times;</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Uncheck any fields you wish to hide from view:</span>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="toggleAllColumns(true)">Show All</button>
+          <button class="btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="toggleAllColumns(false)">Hide All</button>
+        </div>
+      </div>
+
+      <div class="column-toggles-container" id="columnCheckboxesContainer">
+        </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="closeColumnModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">Action completed!</div>
+
+  <script>
+    // Clean memory reset on startup
+    try {
+      localStorage.removeItem('data_record_navigator_session_v1');
+      localStorage.removeItem('data_record_navigator_session_v2');
+      localStorage.removeItem('data_record_navigator_session_v3');
+    } catch(e) {}
+
+    // Runtime State
+    let rawData = [];
+    let columnLabels = [];
+    let currentIndex = 0;
+    let commonColIndices = [];
+    let distinctColIndices = [];
+    let hiddenColIndices = new Set();
+    let editingState = null;
+
+    function toStr(val) {
+      if (val === null || val === undefined) return "";
+      return String(val).trim();
+    }
+
+    // Generate accurate formatted timestamp (YYYY-MM-DD_HH-mm-ss)
+    function getTimestampString() {
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const YYYY = now.getFullYear();
+      const MM = pad(now.getMonth() + 1);
+      const DD = pad(now.getDate());
+      const hh = pad(now.getHours());
+      const mm = pad(now.getMinutes());
+      const ss = pad(now.getSeconds());
+      return `${YYYY}-${MM}-${DD}_${hh}-${mm}-${ss}`;
+    }
+
+    // Initialize application state
+    function initApp(data, headers = null) {
+      if (!data || data.length === 0) {
+        rawData = [];
+        columnLabels = [];
+        document.getElementById("emptyView").style.display = "flex";
+        document.getElementById("mainView").style.display = "none";
+        document.getElementById("addRowBtn").disabled = true;
+        document.getElementById("saveCsvBtn").disabled = true;
+        document.getElementById("saveJsonBtn").disabled = true;
+        document.getElementById("colManagerBtn").disabled = true;
+        document.getElementById("totalRecordsBadge").innerText = `0 Records`;
+        document.getElementById("visibleColsBadge").innerText = `0 Columns`;
+        return;
+      }
+
+      // Guarantee strings and equal column lengths across all rows
+      const maxCols = Math.max(...data.map(r => r.length));
+      rawData = data.map(row => {
+        const r = row.map(v => String(v ?? ''));
+        while (r.length < maxCols) r.push("");
+        return r;
+      });
+
+      editingState = null;
+      hiddenColIndices.clear();
+      currentIndex = 0;
+
+      if (headers && headers.length === maxCols) {
+        columnLabels = headers.map(h => String(h ?? ''));
+      } else if (!columnLabels || columnLabels.length !== maxCols) {
+        columnLabels = Array.from({ length: maxCols }, (_, i) => `Column ${i + 1}`);
+      }
+
+      refreshUI();
+      
+      document.getElementById("emptyView").style.display = "none";
+      document.getElementById("mainView").style.display = "flex";
+      document.getElementById("addRowBtn").disabled = false;
+      document.getElementById("saveCsvBtn").disabled = false;
+      document.getElementById("saveJsonBtn").disabled = false;
+      document.getElementById("colManagerBtn").disabled = false;
+    }
+
+    function refreshUI() {
+      analyzeColumns();
+      renderCommonFields();
+      initJumpDropdown();
+      renderCurrentRecord();
+      updateBadges();
+    }
+
+    function updateBadges() {
+      const visibleCount = columnLabels.length - hiddenColIndices.size;
+      document.getElementById("totalRecordsBadge").innerText = `${rawData.length} Records Loaded`;
+      document.getElementById("visibleColsBadge").innerText = `${visibleCount}/${columnLabels.length} Fields Visible`;
+    }
+
+    function analyzeColumns() {
+      if (!rawData || rawData.length === 0) return;
+      const numCols = rawData[0].length;
+      commonColIndices = [];
+      distinctColIndices = [];
+
+      for (let c = 0; c < numCols; c++) {
+        if (hiddenColIndices.has(c)) continue;
+
+        const firstVal = toStr(rawData[0][c]);
+        const isCommon = rawData.every(row => toStr(row[c]) === firstVal);
+        if (isCommon) {
+          commonColIndices.push(c);
+        } else {
+          distinctColIndices.push(c);
+        }
+      }
+    }
+
+    function renderCommonFields() {
+      const container = document.getElementById("commonContainer");
+      const commonSection = document.getElementById("commonSection");
+      container.innerHTML = "";
+
+      if (commonColIndices.length === 0) {
+        commonSection.style.display = "none";
+        return;
+      }
+
+      commonSection.style.display = "block";
+      commonColIndices.forEach(colIdx => {
+        const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+        const val = toStr(rawData[0][colIdx]);
+        const isEmpty = val === "";
+
+        const item = document.createElement("div");
+        item.className = "field-item";
+
+        if (editingState && editingState.colIdx === colIdx && editingState.isCommon) {
+          item.innerHTML = renderInlineEditor(colIdx, val, true);
+        } else {
+          item.innerHTML = `
+            <div class="field-label">
+              <span>${escapeHtml(label)}</span>
+              <span style="font-size: 0.68rem; color: var(--accent);">(Shared by all)</span>
+            </div>
+            <div class="field-body">
+              <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
+              <div class="field-actions">
+                <button class="icon-btn" title="Edit value for all records" onclick="startEditing(${colIdx}, true)">✏️</button>
+                <button class="icon-btn" title="Copy value" onclick="copyField(${colIdx}, this)">📋 Copy</button>
+              </div>
+            </div>
+          `;
+        }
+        container.appendChild(item);
+      });
+    }
+
+    function renderCurrentRecord() {
+      const container = document.getElementById("distinctContainer");
+      container.innerHTML = "";
+      const row = rawData[currentIndex] || [];
+
+      distinctColIndices.forEach(colIdx => {
+        const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+        const val = toStr(row[colIdx]);
+        const isEmpty = val === "";
+
+        const item = document.createElement("div");
+        item.className = "field-item";
+
+        if (editingState && editingState.colIdx === colIdx && !editingState.isCommon) {
+          item.innerHTML = renderInlineEditor(colIdx, val, false);
+        } else {
+          item.innerHTML = `
+            <div class="field-label">
+              <span>${escapeHtml(label)}</span>
+            </div>
+            <div class="field-body">
+              <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
+              <div class="field-actions">
+                <button class="icon-btn" title="Edit field value" onclick="startEditing(${colIdx}, false)">✏️</button>
+                <button class="icon-btn" title="Copy value" onclick="copyField(${colIdx}, this)">📋 Copy</button>
+              </div>
+            </div>
+          `;
+        }
+        container.appendChild(item);
+      });
+
+      document.getElementById("recordIndicator").innerText = `Record ${currentIndex + 1} / ${rawData.length}`;
+      document.getElementById("jumpSelect").value = currentIndex;
+      document.getElementById("prevBtn").disabled = currentIndex === 0;
+      document.getElementById("nextBtn").disabled = currentIndex === rawData.length - 1;
+    }
+
+    function renderInlineEditor(colIdx, currentVal, isCommon) {
+      const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+      return `
+        <div class="inline-edit-box">
+          <div class="field-label" style="color: var(--primary);">Editing: ${escapeHtml(label)}</div>
+          <input type="text" class="inline-input" id="inlineEditInput" value="${escapeHtml(currentVal)}" onkeydown="handleEditKey(event, ${colIdx}, ${isCommon})">
+          <div class="inline-actions">
+            ${!isCommon ? `
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="applyAllCheckbox"> Apply to all rows
+              </label>
+            ` : `<span style="font-size: 0.72rem; color: var(--accent);">Updates all ${rawData.length} rows</span>`}
+            <div style="display: flex; gap: 4px;">
+              <button class="icon-btn" style="background: var(--success); color: #fff;" onclick="saveInlineEdit(${colIdx}, ${isCommon})">✓ Save</button>
+              <button class="icon-btn" onclick="cancelEditing()">✕ Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function startEditing(colIdx, isCommon) {
+      editingState = { colIdx, isCommon };
+      if (isCommon) renderCommonFields();
+      else renderCurrentRecord();
+      
+      setTimeout(() => {
+        const input = document.getElementById("inlineEditInput");
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }, 50);
+    }
+
+    function cancelEditing() {
+      editingState = null;
+      renderCommonFields();
+      renderCurrentRecord();
+    }
+
+    function handleEditKey(e, colIdx, isCommon) {
+      if (e.key === "Enter") {
+        saveInlineEdit(colIdx, isCommon);
+      } else if (e.key === "Escape") {
+        cancelEditing();
+      }
+    }
+
+    function saveInlineEdit(colIdx, isCommon) {
+      const input = document.getElementById("inlineEditInput");
+      if (!input) return;
+
+      const newVal = input.value;
+      const applyAll = isCommon || (document.getElementById("applyAllCheckbox") && document.getElementById("applyAllCheckbox").checked);
+      const colName = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+
+      if (applyAll) {
+        rawData.forEach(row => {
+          row[colIdx] = newVal;
+        });
+        showToast(`Updated "${colName}" across all records!`);
+      } else {
+        rawData[currentIndex][colIdx] = newVal;
+        showToast(`Updated "${colName}" for record #${currentIndex + 1}`);
+      }
+
+      editingState = null;
+      refreshUI();
+    }
+
+    function initJumpDropdown() {
+      const select = document.getElementById("jumpSelect");
+      select.innerHTML = "";
+      
+      const snoIdx = columnLabels.findIndex(h => /s\.?no|sl/i.test(h));
+      const nameIdx = columnLabels.findIndex(h => /name/i.test(h));
+      const accIdx = columnLabels.findIndex(h => /acc|ac_num|account/i.test(h));
+
+      rawData.forEach((row, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        const sno = (snoIdx !== -1 && row[snoIdx]) ? `#${row[snoIdx]}` : `#${idx + 1}`;
+        const name = (nameIdx !== -1 && row[nameIdx]) ? ` - ${row[nameIdx]}` : '';
+        const acc = (accIdx !== -1 && row[accIdx]) ? ` (${row[accIdx]})` : '';
+        
+        opt.innerText = `${sno}${name}${acc}`;
+        select.appendChild(opt);
+      });
+    }
+
+    function navigate(delta) {
+      if (editingState) cancelEditing();
+      const newIdx = currentIndex + delta;
+      if (newIdx >= 0 && newIdx < rawData.length) {
+        currentIndex = newIdx;
+        renderCurrentRecord();
+      }
+    }
+
+    function jumpTo(index) {
+      if (editingState) cancelEditing();
+      currentIndex = parseInt(index, 10);
+      renderCurrentRecord();
+    }
+
+    /* --- ADD ROW FUNCTIONALITY --- */
+    function openAddRowModal() {
+      if (!rawData || rawData.length === 0) return;
+
+      document.getElementById("activeRecordLabel").innerText = `#${currentIndex + 1}`;
+      
+      const specSelect = document.getElementById("specificRecordSelect");
+      specSelect.innerHTML = "";
+      
+      const snoIdx = columnLabels.findIndex(h => /s\.?no|sl/i.test(h));
+      const nameIdx = columnLabels.findIndex(h => /name/i.test(h));
+
+      rawData.forEach((r, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        const sno = (snoIdx !== -1 && r[snoIdx]) ? `#${r[snoIdx]}` : `#${idx + 1}`;
+        const name = (nameIdx !== -1 && r[nameIdx]) ? ` - ${r[nameIdx]}` : '';
+        opt.innerText = `${sno}${name}`;
+        specSelect.appendChild(opt);
+      });
+
+      document.querySelector("input[name='newRowSource'][value='current']").checked = true;
+      updateAddRowUI();
+      document.getElementById("addRowModal").classList.add("active");
+    }
+
+    function closeAddRowModal() {
+      document.getElementById("addRowModal").classList.remove("active");
+    }
+
+    function updateAddRowUI() {
+      const src = document.querySelector("input[name='newRowSource']:checked").value;
+      const specSelect = document.getElementById("specificRecordSelect");
+      specSelect.style.display = (src === 'specific') ? 'block' : 'none';
+    }
+
+    function confirmAddRow() {
+      const src = document.querySelector("input[name='newRowSource']:checked").value;
+      const pos = document.querySelector("input[name='newRowPos']:checked").value;
+      const numCols = columnLabels.length;
+
+      let newRow = [];
+      if (src === 'current') {
+        newRow = [...rawData[currentIndex]];
+      } else if (src === 'specific') {
+        const specIdx = parseInt(document.getElementById("specificRecordSelect").value, 10);
+        newRow = [...rawData[specIdx]];
+      } else {
+        newRow = Array(numCols).fill("");
+      }
+
+      let targetIdx = rawData.length;
+      if (pos === 'after') {
+        targetIdx = currentIndex + 1;
+        rawData.splice(targetIdx, 0, newRow);
+      } else {
+        rawData.push(newRow);
+        targetIdx = rawData.length - 1;
+      }
+
+      currentIndex = targetIdx;
+      refreshUI();
+      closeAddRowModal();
+      showToast(`Added new record #${currentIndex + 1}!`);
+    }
+
+    /* --- COLUMN VISIBILITY --- */
+    function openColumnModal() {
+      const container = document.getElementById("columnCheckboxesContainer");
+      container.innerHTML = "";
+
+      columnLabels.forEach((colName, idx) => {
+        const isChecked = !hiddenColIndices.has(idx);
+        const label = document.createElement("label");
+        label.className = "col-toggle-item";
+        label.innerHTML = `
+          <input type="checkbox" data-col="${idx}" ${isChecked ? 'checked' : ''} onchange="toggleColumnVisibility(${idx}, this.checked)">
+          <span>${escapeHtml(colName || `Col ${idx + 1}`)}</span>
+        `;
+        container.appendChild(label);
+      });
+
+      document.getElementById("columnModal").classList.add("active");
+    }
+
+    function closeColumnModal() {
+      document.getElementById("columnModal").classList.remove("active");
+      refreshUI();
+    }
+
+    function toggleColumnVisibility(colIdx, isVisible) {
+      if (isVisible) hiddenColIndices.delete(colIdx);
+      else hiddenColIndices.add(colIdx);
+    }
+
+    function toggleAllColumns(makeAllVisible) {
+      if (makeAllVisible) hiddenColIndices.clear();
+      else columnLabels.forEach((_, idx) => hiddenColIndices.add(idx));
+
+      const checkboxes = document.querySelectorAll("#columnCheckboxesContainer input[type='checkbox']");
+      checkboxes.forEach(cb => cb.checked = makeAllVisible);
+    }
+
+    /* --- CLIPBOARD --- */
+    function copyField(colIdx, btnElement) {
+      const val = rawData[currentIndex] ? rawData[currentIndex][colIdx] : "";
+      copyText(val, btnElement);
+    }
+
+    function copyText(text, btnElement) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Copied: "${text}"`);
+        if (btnElement) {
+          const orig = btnElement.innerText;
+          btnElement.innerText = "✓";
+          btnElement.classList.add("copied");
+          setTimeout(() => {
+            btnElement.innerText = orig;
+            btnElement.classList.remove("copied");
+          }, 1200);
+        }
+      });
+    }
+
+    function copyEntireCurrentRow() {
+      if (!rawData[currentIndex]) return;
+      const row = rawData[currentIndex];
+      const text = row.join("\t");
+      copyText(text, null);
+      showToast(`Copied row #${currentIndex + 1} (Tab-Separated)`);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function openImportModal() {
+      document.getElementById("importModal").classList.add("active");
+    }
+
+    function closeImportModal() {
+      document.getElementById("importModal").classList.remove("active");
+    }
+
+    /* --- PARSING --- */
+    function parseAndLoadText() {
+      let raw = document.getElementById("rawTextInput").value.trim();
+      const userHeaderToggle = document.getElementById("headerCheckbox").checked;
+      if (!raw) return;
+
+      if (raw.startsWith("[") && raw.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            processParsedJson(parsed);
+            closeImportModal();
+            return;
+          }
+        } catch(e) {
+          raw = raw.substring(1, raw.length - 1).trim();
+        }
+      }
+
+      if (raw.startsWith("{") || raw.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(raw);
+          processParsedJson(parsed);
+          closeImportModal();
+          return;
+        } catch(e) {}
+      }
+
+      parseRawDataString(raw, userHeaderToggle);
+      closeImportModal();
+    }
+
+    function parseRawDataString(raw, firstRowIsHeader) {
+      const lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length === 0) return;
+
+      const delimiter = lines[0].includes("\t") ? "\t" : ",";
+
+      const matrix = lines.map(line => {
+        if (delimiter === "\t") {
+          return line.split("\t").map(v => String(v ?? '').trim());
+        } else {
+          return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => String(v ?? '').replace(/^"|"$/g, '').trim());
+        }
+      });
+
+      let headers = null;
+      let dataRows = matrix;
+
+      const looksLikeHeader = isNaN(Number(matrix[0][0])) && isNaN(Date.parse(matrix[0][0]));
+
+      if (firstRowIsHeader || looksLikeHeader) {
+        headers = matrix[0];
+        dataRows = matrix.slice(1);
+      }
+
+      initApp(dataRows, headers);
+      showToast(`Loaded ${dataRows.length} records!`);
+    }
+
+    function processParsedJson(parsed) {
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        alert("Invalid JSON format. Expected an array of objects or rows.");
+        return;
+      }
+
+      if (Array.isArray(parsed[0])) {
+        initApp(parsed, null);
+      } else if (typeof parsed[0] === 'object') {
+        const keys = Object.keys(parsed[0]);
+        const matrix = parsed.map(obj => keys.map(k => String(obj[k] ?? '')));
+        initApp(matrix, keys);
+      }
+      showToast(`Loaded ${parsed.length} JSON records!`);
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById("rawTextInput").value = e.target.result;
+        parseAndLoadText();
+      };
+      reader.readAsText(file);
+    }
+
+    /* --- TIMESTAMPED EXPORT --- */
+    function exportData(format) {
+      if (!rawData || rawData.length === 0) {
+        alert("No data available to export.");
+        return;
+      }
+
+      const timestamp = getTimestampString();
+      let content = "";
+      let filename = `export_${timestamp}`;
+      let mimeType = "";
+
+      if (format === 'csv') {
+        filename += ".csv";
+        mimeType = "text/csv;charset=utf-8;";
+        const csvRows = [
+          columnLabels.slice(0, rawData[0].length).map(h => `"${String(h).replace(/"/g, '""')}"`).join(","),
+          ...rawData.map(row => row.map(val => `"${String(val ?? '').replace(/"/g, '""')}"`).join(","))
+        ];
+        content = csvRows.join("\r\n");
+      } else if (format === 'json') {
+        filename += ".json";
+        mimeType = "application/json;charset=utf-8;";
+        const headers = columnLabels.slice(0, rawData[0].length);
+        const jsonObjects = rawData.map(row => {
+          let obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = row[i] ?? "";
+          });
+          return obj;
+        });
+        content = JSON.stringify(jsonObjects, null, 2);
+      }
+
+      const blob = new Blob([content], { type: mimeType });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded: ${filename}`);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (document.querySelector(".modal-backdrop.active")) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.key === "ArrowLeft") navigate(-1);
+      if (e.key === "ArrowRight") navigate(1);
+    });
+
+    // Start in empty state
+    initApp([]);
+  </script>
+</body>
+</html>
