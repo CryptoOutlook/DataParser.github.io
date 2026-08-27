@@ -106,6 +106,17 @@
       color: #fff;
     }
 
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: var(--danger);
+      color: #fff;
+    }
+
     .badge {
       background: var(--card-border);
       color: var(--text);
@@ -113,6 +124,12 @@
       border-radius: 9999px;
       font-size: 0.8rem;
       font-weight: 600;
+    }
+
+    .badge-success {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(34, 197, 94, 0.3);
     }
 
     /* Cards */
@@ -322,8 +339,8 @@
       border: 1px solid var(--card-border);
       border-radius: 14px;
       width: 100%;
-      max-width: 680px;
-      max-height: 85vh;
+      max-width: 720px;
+      max-height: 88vh;
       padding: 24px;
       display: flex;
       flex-direction: column;
@@ -406,6 +423,57 @@
       background: #334155;
     }
 
+    /* History Table View */
+    .history-list {
+      overflow-y: auto;
+      max-height: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .history-card {
+      background: var(--field-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .history-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.85rem;
+    }
+
+    .history-time {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .history-diff {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: monospace;
+      font-size: 0.82rem;
+    }
+
+    .diff-old {
+      color: #f87171;
+      text-decoration: line-through;
+    }
+
+    .diff-new {
+      color: #4ade80;
+      font-weight: 600;
+    }
+
     /* Toast */
     #toast {
       position: fixed;
@@ -446,11 +514,13 @@
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
           <span class="badge" id="totalRecordsBadge">0 Records</span>
           <span class="badge" id="visibleColsBadge">0 Columns</span>
+          <span class="badge badge-success" id="autoSaveBadge">💾 Session Saved</span>
         </div>
       </div>
 
       <div class="action-bar">
-        <button class="btn btn-primary" onclick="openImportModal()">📥 Load / Import Data</button>
+        <button class="btn btn-primary" onclick="openImportModal()">📥 Load Data</button>
+        <button class="btn" id="historyBtn" onclick="openHistoryModal()" disabled>📜 History (0)</button>
         <button class="btn" id="colManagerBtn" onclick="openColumnModal()" disabled>👁️ Columns</button>
         <button class="btn" id="saveCsvBtn" onclick="exportData('csv')" disabled>💾 Save CSV</button>
         <button class="btn" id="saveJsonBtn" onclick="exportData('json')" disabled>💾 Save JSON</button>
@@ -460,7 +530,7 @@
     <div id="emptyView" class="card empty-state">
       <div style="font-size: 2.5rem;">📂</div>
       <h3>No Data Loaded</h3>
-      <p>Import Excel data, paste CSV/TSV records, or upload a JSON/CSV file to begin.</p>
+      <p>Import Excel rows, paste CSV/TSV records, or upload a JSON/CSV file to begin.</p>
       <button class="btn btn-primary" style="margin-top: 8px;" onclick="openImportModal()">📥 Load Data Now</button>
     </div>
 
@@ -498,7 +568,7 @@
       </section>
 
       <div class="shortcut-hint">
-        Tip: Click <b>✏️</b> to edit values in-place. Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> keys to step through records.
+        Tip: Edits are automatically saved to your browser. Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">Ctrl+Z</kbd> to Undo, and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> to navigate records.
       </div>
     </div>
   </div>
@@ -552,53 +622,130 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="historyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Edit History & Audit Log</h2>
+        <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Review past changes or revert specific edits:</span>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.75rem;" onclick="clearAllSessionData()">🧹 Clear Stored Session</button>
+        </div>
+      </div>
+
+      <div class="history-list" id="historyContainer">
+        </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="closeHistoryModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast">Action completed!</div>
 
   <script>
+    const STORAGE_KEY = 'data_record_navigator_session_v1';
+
     // Application State
     let rawData = [];
     let columnLabels = [];
     let currentIndex = 0;
     let commonColIndices = [];
     let distinctColIndices = [];
-    let hiddenColIndices = new Set(); // Set of hidden column indices
-    let editingState = null; // { colIdx: number, isCommon: boolean }
+    let hiddenColIndices = new Set();
+    let editHistory = []; // Audit log array
+    let editingState = null;
+
+    // Save full state to browser LocalStorage
+    function persistSession() {
+      if (!rawData || rawData.length === 0) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+
+      try {
+        const payload = {
+          rawData,
+          columnLabels,
+          hiddenColIndices: Array.from(hiddenColIndices),
+          editHistory,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        updateBadges();
+      } catch (e) {
+        console.warn("Storage quota exceeded or error saving session:", e);
+      }
+    }
+
+    // Try restoring state on initial launch
+    function loadSavedSession() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) return false;
+
+        const data = JSON.parse(stored);
+        if (data && data.rawData && Array.isArray(data.rawData) && data.rawData.length > 0) {
+          rawData = data.rawData;
+          columnLabels = data.columnLabels || [];
+          hiddenColIndices = new Set(data.hiddenColIndices || []);
+          editHistory = data.editHistory || [];
+          
+          initApp(rawData, columnLabels, false); // false = don't clear history
+          showToast("Restored your previous auto-saved session!");
+          return true;
+        }
+      } catch (e) {
+        console.error("Error reading stored session:", e);
+      }
+      return false;
+    }
 
     // Initialize application state
-    function initApp(data, headers = null) {
+    function initApp(data, headers = null, isNewImport = true) {
       if (!data || data.length === 0) {
         document.getElementById("emptyView").style.display = "flex";
         document.getElementById("mainView").style.display = "none";
         document.getElementById("saveCsvBtn").disabled = true;
         document.getElementById("saveJsonBtn").disabled = true;
         document.getElementById("colManagerBtn").disabled = true;
+        document.getElementById("historyBtn").disabled = true;
         document.getElementById("totalRecordsBadge").innerText = `0 Records`;
         document.getElementById("visibleColsBadge").innerText = `0 Columns`;
         return;
       }
 
       rawData = data;
-      hiddenColIndices.clear();
       editingState = null;
       
+      if (isNewImport) {
+        hiddenColIndices.clear();
+        editHistory = [];
+      }
+
       if (headers && headers.length === data[0].length) {
         columnLabels = headers;
-      } else {
+      } else if (!columnLabels || columnLabels.length !== data[0].length) {
         columnLabels = data[0].map((_, i) => `Column ${i + 1}`);
       }
 
       currentIndex = 0;
       refreshUI();
+      persistSession();
       
-      // Update UI visibility
       document.getElementById("emptyView").style.display = "none";
       document.getElementById("mainView").style.display = "flex";
       document.getElementById("saveCsvBtn").disabled = false;
       document.getElementById("saveJsonBtn").disabled = false;
       document.getElementById("colManagerBtn").disabled = false;
+      document.getElementById("historyBtn").disabled = false;
     }
 
-    // Refresh and recalculate full view
+    // Refresh and recalculate UI
     function refreshUI() {
       analyzeColumns();
       renderCommonFields();
@@ -611,6 +758,7 @@
       const visibleCount = columnLabels.length - hiddenColIndices.size;
       document.getElementById("totalRecordsBadge").innerText = `${rawData.length} Records Loaded`;
       document.getElementById("visibleColsBadge").innerText = `${visibleCount}/${columnLabels.length} Fields Visible`;
+      document.getElementById("historyBtn").innerText = `📜 History (${editHistory.length})`;
     }
 
     // Split common vs. distinct fields
@@ -620,7 +768,6 @@
       distinctColIndices = [];
 
       for (let c = 0; c < numCols; c++) {
-        // Skip analyzing if column is hidden
         if (hiddenColIndices.has(c)) continue;
 
         const firstVal = (rawData[0][c] || "").trim();
@@ -653,7 +800,6 @@
         const item = document.createElement("div");
         item.className = "field-item";
 
-        // Check if this field is actively being edited
         if (editingState && editingState.colIdx === colIdx && editingState.isCommon) {
           item.innerHTML = renderInlineEditor(colIdx, val, true);
         } else {
@@ -689,7 +835,6 @@
         const item = document.createElement("div");
         item.className = "field-item";
 
-        // Check if this field is actively being edited
         if (editingState && editingState.colIdx === colIdx && !editingState.isCommon) {
           item.innerHTML = renderInlineEditor(colIdx, val, false);
         } else {
@@ -709,20 +854,19 @@
         container.appendChild(item);
       });
 
-      // Update Controls
-      document.getElementById("recordIndicator").innerText = `Record ${currentIndex + 1} / ${rawData.length}`;
+      document.getElementById("recordIndicator").innerText = `Record ${currentIndex + 1} /${rawData.length}`;
       document.getElementById("jumpSelect").value = currentIndex;
       document.getElementById("prevBtn").disabled = currentIndex === 0;
       document.getElementById("nextBtn").disabled = currentIndex === rawData.length - 1;
     }
 
-    // HTML Generator for the Inline Editor
+    // HTML for the Inline Editor
     function renderInlineEditor(colIdx, currentVal, isCommon) {
       const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
       return `
         <div class="inline-edit-box">
           <div class="field-label" style="color: var(--primary);">Editing: ${escapeHtml(label)}</div>
-          <input type="text" class="inline-input" id="inlineEditInput" value="${escapeHtml(currentVal)}" autofocus onkeydown="handleEditKey(event, ${colIdx}, ${isCommon})">
+          <input type="text" class="inline-input" id="inlineEditInput" value="${escapeHtml(currentVal)}" autofocus onkeydown="handleEditKey(event, ${colIdx},${isCommon})">
           <div class="inline-actions">
             ${!isCommon ? `
               <label style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;">
@@ -730,7 +874,7 @@
               </label>
             ` : `<span style="font-size: 0.72rem; color: var(--accent);">Updates all ${rawData.length} rows</span>`}
             <div style="display: flex; gap: 4px;">
-              <button class="icon-btn" style="background: var(--success); color: #fff;" onclick="saveInlineEdit(${colIdx}, ${isCommon})">✓ Save</button>
+              <button class="icon-btn" style="background: var(--success); color: #fff;" onclick="saveInlineEdit(${colIdx},${isCommon})">✓ Save</button>
               <button class="icon-btn" onclick="cancelEditing()">✕ Cancel</button>
             </div>
           </div>
@@ -738,14 +882,12 @@
       `;
     }
 
-    // Editing Operations
+    // Inline Editing Controls
     function startEditing(colIdx, isCommon) {
       editingState = { colIdx, isCommon };
-      if (isCommon) {
-        renderCommonFields();
-      } else {
-        renderCurrentRecord();
-      }
+      if (isCommon) renderCommonFields();
+      else renderCurrentRecord();
+      
       setTimeout(() => {
         const input = document.getElementById("inlineEditInput");
         if (input) {
@@ -775,19 +917,76 @@
 
       const newVal = input.value;
       const applyAll = isCommon || (document.getElementById("applyAllCheckbox") && document.getElementById("applyAllCheckbox").checked);
+      const colName = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+
+      // Build History Audit Item
+      const historyItem = {
+        id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        colIdx: colIdx,
+        colName: colName,
+        isAll: applyAll,
+        targetDesc: applyAll ? `All Records (${rawData.length})` : `Record #${currentIndex + 1}`,
+        newVal: newVal,
+        changes: []
+      };
 
       if (applyAll) {
-        rawData.forEach(row => {
-          row[colIdx] = newVal;
+        rawData.forEach((row, rIdx) => {
+          if (row[colIdx] !== newVal) {
+            historyItem.changes.push({ rowIdx: rIdx, oldVal: row[colIdx] });
+            row[colIdx] = newVal;
+          }
         });
-        showToast(`Updated "${columnLabels[colIdx]}" across all records!`);
+        showToast(`Updated "${colName}" across all records!`);
       } else {
-        rawData[currentIndex][colIdx] = newVal;
-        showToast(`Updated record #${currentIndex + 1}`);
+        const oldVal = rawData[currentIndex][colIdx];
+        if (oldVal !== newVal) {
+          historyItem.changes.push({ rowIdx: currentIndex, oldVal: oldVal });
+          rawData[currentIndex][colIdx] = newVal;
+        }
+        showToast(`Updated "${colName}" for record #${currentIndex + 1}`);
+      }
+
+      // Add to history if anything actually changed
+      if (historyItem.changes.length > 0) {
+        editHistory.unshift(historyItem);
       }
 
       editingState = null;
       refreshUI();
+      persistSession();
+    }
+
+    // Revert a history item
+    function revertHistoryItem(histId) {
+      const itemIdx = editHistory.findIndex(h => h.id === histId);
+      if (itemIdx === -1) return;
+
+      const item = editHistory[itemIdx];
+      // Revert each row changed
+      item.changes.forEach(c => {
+        if (rawData[c.rowIdx]) {
+          rawData[c.rowIdx][item.colIdx] = c.oldVal;
+        }
+      });
+
+      // Remove from history log
+      editHistory.splice(itemIdx, 1);
+      showToast(`Reverted change on "${item.colName}"`);
+      
+      refreshUI();
+      persistSession();
+      renderHistoryModal();
+    }
+
+    // Undo last edit
+    function undoLastEdit() {
+      if (editHistory.length === 0) {
+        showToast("No edits to undo.");
+        return;
+      }
+      revertHistoryItem(editHistory[0].id);
     }
 
     // Jump Dropdown setup
@@ -849,220 +1048,54 @@
     function closeColumnModal() {
       document.getElementById("columnModal").classList.remove("active");
       refreshUI();
+      persistSession();
     }
 
     function toggleColumnVisibility(colIdx, isVisible) {
-      if (isVisible) {
-        hiddenColIndices.delete(colIdx);
-      } else {
-        hiddenColIndices.add(colIdx);
-      }
+      if (isVisible) hiddenColIndices.delete(colIdx);
+      else hiddenColIndices.add(colIdx);
     }
 
     function toggleAllColumns(makeAllVisible) {
-      if (makeAllVisible) {
-        hiddenColIndices.clear();
-      } else {
-        columnLabels.forEach((_, idx) => hiddenColIndices.add(idx));
-      }
-      // Update modal checkboxes
+      if (makeAllVisible) hiddenColIndices.clear();
+      else columnLabels.forEach((_, idx) => hiddenColIndices.add(idx));
+
       const checkboxes = document.querySelectorAll("#columnCheckboxesContainer input[type='checkbox']");
       checkboxes.forEach(cb => cb.checked = makeAllVisible);
     }
 
-    // Clipboard Copy
-    function copyText(text, btnElement) {
-      navigator.clipboard.writeText(text).then(() => {
-        showToast(`Copied: "${text}"`);
-        if (btnElement) {
-          const orig = btnElement.innerText;
-          btnElement.innerText = "✓";
-          btnElement.classList.add("copied");
-          setTimeout(() => {
-            btnElement.innerText = orig;
-            btnElement.classList.remove("copied");
-          }, 1200);
-        }
-      });
+    // History & Audit Modal
+    function openHistoryModal() {
+      renderHistoryModal();
+      document.getElementById("historyModal").classList.add("active");
     }
 
-    function copyEntireCurrentRow() {
-      const row = rawData[currentIndex];
-      const text = row.join("\t");
-      copyText(text, null);
-      showToast(`Copied row #${currentIndex + 1} (Tab-Separated)`);
+    function closeHistoryModal() {
+      document.getElementById("historyModal").classList.remove("active");
     }
 
-    // Toast
-    function showToast(msg) {
-      const toast = document.getElementById("toast");
-      toast.innerText = msg;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 1800);
-    }
+    function renderHistoryModal() {
+      const container = document.getElementById("historyContainer");
+      container.innerHTML = "";
 
-    // Modal Handlers
-    function openImportModal() {
-      document.getElementById("importModal").classList.add("active");
-    }
-
-    function closeImportModal() {
-      document.getElementById("importModal").classList.remove("active");
-    }
-
-    // Text & File Parsers
-    function parseAndLoadText() {
-      let raw = document.getElementById("rawTextInput").value.trim();
-      const userHeaderToggle = document.getElementById("headerCheckbox").checked;
-      if (!raw) return;
-
-      if (raw.startsWith("[") && raw.endsWith("]")) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            processParsedJson(parsed);
-            closeImportModal();
-            return;
-          }
-        } catch(e) {
-          raw = raw.substring(1, raw.length - 1).trim();
-        }
-      }
-
-      if (raw.startsWith("{") || raw.startsWith("[")) {
-        try {
-          const parsed = JSON.parse(raw);
-          processParsedJson(parsed);
-          closeImportModal();
-          return;
-        } catch(e) {}
-      }
-
-      parseRawDataString(raw, userHeaderToggle);
-      closeImportModal();
-    }
-
-    function parseRawDataString(raw, firstRowIsHeader) {
-      const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (lines.length === 0) return;
-
-      const delimiter = lines[0].includes("\t") ? "\t" : ",";
-
-      const matrix = lines.map(line => {
-        if (delimiter === "\t") {
-          return line.split("\t").map(v => v.trim());
-        } else {
-          return line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').trim());
-        }
-      });
-
-      let headers = null;
-      let dataRows = matrix;
-
-      const looksLikeHeader = isNaN(Number(matrix[0][0])) && isNaN(Date.parse(matrix[0][0]));
-
-      if (firstRowIsHeader || looksLikeHeader) {
-        headers = matrix[0];
-        dataRows = matrix.slice(1);
-      }
-
-      initApp(dataRows, headers);
-      showToast(`Loaded ${dataRows.length} records!`);
-    }
-
-    function processParsedJson(parsed) {
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        alert("Invalid JSON format. Expected an array of objects or an array of rows.");
+      if (editHistory.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding: 24px; color: var(--text-muted);">
+            No edits made yet. Edits and changes will appear here.
+          </div>
+        `;
         return;
       }
 
-      if (Array.isArray(parsed[0])) {
-        initApp(parsed);
-      } else if (typeof parsed[0] === 'object') {
-        const keys = Object.keys(parsed[0]);
-        const matrix = parsed.map(obj => keys.map(k => String(obj[k] ?? '')));
-        initApp(matrix, keys);
-      }
-      showToast(`Loaded ${parsed.length} JSON records!`);
-    }
+      editHistory.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "history-card";
 
-    function handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+        const previewOld = item.changes[0] ? item.changes[0].oldVal : '';
+        const diffText = item.isAll 
+          ? `Bulk set to: <span class="diff-new">"${escapeHtml(item.newVal)}"</span>` 
+          : `<span class="diff-old">"${escapeHtml(previewOld)}"</span> ➔ <span class="diff-new">"${escapeHtml(item.newVal)}"</span>`;
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        document.getElementById("rawTextInput").value = e.target.result;
-        parseAndLoadText();
-      };
-      reader.readAsText(file);
-    }
-
-    // Data Exporters
-    function exportData(format) {
-      if (!rawData || rawData.length === 0) {
-        alert("No data available to export.");
-        return;
-      }
-
-      let content = "";
-      let filename = `export_${new Date().toISOString().slice(0,10)}`;
-      let mimeType = "";
-
-      if (format === 'csv') {
-        filename += ".csv";
-        mimeType = "text/csv;charset=utf-8;";
-        const csvRows = [
-          columnLabels.slice(0, rawData[0].length).map(h => `"${h.replace(/"/g, '""')}"`).join(","),
-          ...rawData.map(row => row.map(val => `"${String(val ?? '').replace(/"/g, '""')}"`).join(","))
-        ];
-        content = csvRows.join("\r\n");
-      } else if (format === 'json') {
-        filename += ".json";
-        mimeType = "application/json;charset=utf-8;";
-        const headers = columnLabels.slice(0, rawData[0].length);
-        const jsonObjects = rawData.map(row => {
-          let obj = {};
-          headers.forEach((h, i) => {
-            obj[h] = row[i] ?? "";
-          });
-          return obj;
-        });
-        content = JSON.stringify(jsonObjects, null, 2);
-      }
-
-      const blob = new Blob([content], { type: mimeType });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showToast(`Downloaded ${filename}`);
-    }
-
-    // Helpers
-    function escapeHtml(str) {
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function escapeJs(str) {
-      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
-    }
-
-    // Keyboard Shortcuts (Arrow navigation ignored while actively typing)
-    document.addEventListener("keydown", (e) => {
-      if (document.querySelector(".modal-backdrop.active")) return;
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-      if (e.key === "ArrowLeft") navigate(-1);
-      if (e.key === "ArrowRight") navigate(1);
-    });
-
-    // Start empty
-    initApp([]);
-  </script>
-</body>
-</html>
+        card.innerHTML = `
+          <div class="history-info">
+            <div style="font-weight: 600; color: var(--primary);">
