@@ -18,6 +18,7 @@
       --success: #22c55e;
       --field-bg: #0f172a;
       --danger: #ef4444;
+      --warning: #f59e0b;
     }
 
     * {
@@ -39,7 +40,7 @@
 
     .container {
       width: 100%;
-      max-width: 1200px;
+      max-width: 1250px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -154,7 +155,7 @@
     /* Grids */
     .fields-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 12px;
     }
 
@@ -168,13 +169,17 @@
       flex-direction: column;
       justify-content: space-between;
       gap: 6px;
-      min-height: 72px;
+      min-height: 78px;
+      position: relative;
     }
 
     .field-label {
       font-size: 0.75rem;
       color: var(--text-muted);
       font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .field-body {
@@ -192,18 +197,23 @@
     }
 
     .field-val.empty {
-      color: var(--card-border);
+      color: #64748b;
       font-style: italic;
       font-weight: 400;
     }
 
-    /* Copy Button */
-    .copy-btn {
+    .field-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* Action Buttons inside cards */
+    .icon-btn {
       background: #334155;
       border: none;
       color: var(--text);
       cursor: pointer;
-      padding: 5px 9px;
+      padding: 5px 8px;
       border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 600;
@@ -214,14 +224,40 @@
       white-space: nowrap;
     }
 
-    .copy-btn:hover {
+    .icon-btn:hover {
       background: var(--primary);
       color: #0f172a;
     }
 
-    .copy-btn.copied {
+    .icon-btn.copied {
       background: var(--success);
       color: #fff;
+    }
+
+    /* Inline Editor View */
+    .inline-edit-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .inline-input {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid var(--primary);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .inline-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: space-between;
     }
 
     /* Navigator Bar */
@@ -261,7 +297,7 @@
       max-width: 320px;
     }
 
-    /* Modal / Dialog */
+    /* Modals */
     .modal-backdrop {
       position: fixed;
       top: 0;
@@ -287,6 +323,7 @@
       border-radius: 14px;
       width: 100%;
       max-width: 680px;
+      max-height: 85vh;
       padding: 24px;
       display: flex;
       flex-direction: column;
@@ -340,6 +377,35 @@
       border-color: var(--primary);
     }
 
+    /* Columns Manager Grid */
+    .column-toggles-container {
+      overflow-y: auto;
+      max-height: 380px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      padding: 6px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: var(--field-bg);
+    }
+
+    .col-toggle-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--card-bg);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .col-toggle-item:hover {
+      background: #334155;
+    }
+
     /* Toast */
     #toast {
       position: fixed;
@@ -377,11 +443,15 @@
     <header>
       <div>
         <h1>Data Record Navigator</h1>
-        <span class="badge" id="totalRecordsBadge">0 Records</span>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+          <span class="badge" id="totalRecordsBadge">0 Records</span>
+          <span class="badge" id="visibleColsBadge">0 Columns</span>
+        </div>
       </div>
 
       <div class="action-bar">
         <button class="btn btn-primary" onclick="openImportModal()">📥 Load / Import Data</button>
+        <button class="btn" id="colManagerBtn" onclick="openColumnModal()" disabled>👁️ Columns</button>
         <button class="btn" id="saveCsvBtn" onclick="exportData('csv')" disabled>💾 Save CSV</button>
         <button class="btn" id="saveJsonBtn" onclick="exportData('json')" disabled>💾 Save JSON</button>
       </div>
@@ -421,14 +491,14 @@
       <section class="card">
         <div class="card-title">
           <span>📄 Active Record Fields (Distinct / Dynamic)</span>
-          <button class="copy-btn" onclick="copyEntireCurrentRow()">📋 Copy Full Row</button>
+          <button class="icon-btn" onclick="copyEntireCurrentRow()">📋 Copy Full Row</button>
         </div>
         <div class="fields-grid" id="distinctContainer">
           </div>
       </section>
 
       <div class="shortcut-hint">
-        Tip: Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> keyboard arrow keys to step through records.
+        Tip: Click <b>✏️</b> to edit values in-place. Use <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">←</kbd> and <kbd style="background: #334155; padding: 2px 6px; border-radius: 4px;">→</kbd> keys to step through records.
       </div>
     </div>
   </div>
@@ -458,28 +528,58 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="columnModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Manage Visible Fields</h2>
+        <button class="modal-close" onclick="closeColumnModal()">&times;</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Uncheck any fields you wish to hide from view:</span>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="toggleAllColumns(true)">Show All</button>
+          <button class="btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="toggleAllColumns(false)">Hide All</button>
+        </div>
+      </div>
+
+      <div class="column-toggles-container" id="columnCheckboxesContainer">
+        </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="closeColumnModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast">Action completed!</div>
 
   <script>
-    // State Variables
+    // Application State
     let rawData = [];
     let columnLabels = [];
     let currentIndex = 0;
     let commonColIndices = [];
     let distinctColIndices = [];
+    let hiddenColIndices = new Set(); // Set of hidden column indices
+    let editingState = null; // { colIdx: number, isCommon: boolean }
 
-    // Initialize/Refresh application state
+    // Initialize application state
     function initApp(data, headers = null) {
       if (!data || data.length === 0) {
         document.getElementById("emptyView").style.display = "flex";
         document.getElementById("mainView").style.display = "none";
         document.getElementById("saveCsvBtn").disabled = true;
         document.getElementById("saveJsonBtn").disabled = true;
+        document.getElementById("colManagerBtn").disabled = true;
         document.getElementById("totalRecordsBadge").innerText = `0 Records`;
+        document.getElementById("visibleColsBadge").innerText = `0 Columns`;
         return;
       }
 
       rawData = data;
+      hiddenColIndices.clear();
+      editingState = null;
       
       if (headers && headers.length === data[0].length) {
         columnLabels = headers;
@@ -488,17 +588,29 @@
       }
 
       currentIndex = 0;
-      analyzeColumns();
-      renderCommonFields();
-      initJumpDropdown();
-      renderCurrentRecord();
+      refreshUI();
       
       // Update UI visibility
       document.getElementById("emptyView").style.display = "none";
       document.getElementById("mainView").style.display = "flex";
       document.getElementById("saveCsvBtn").disabled = false;
       document.getElementById("saveJsonBtn").disabled = false;
+      document.getElementById("colManagerBtn").disabled = false;
+    }
+
+    // Refresh and recalculate full view
+    function refreshUI() {
+      analyzeColumns();
+      renderCommonFields();
+      initJumpDropdown();
+      renderCurrentRecord();
+      updateBadges();
+    }
+
+    function updateBadges() {
+      const visibleCount = columnLabels.length - hiddenColIndices.size;
       document.getElementById("totalRecordsBadge").innerText = `${rawData.length} Records Loaded`;
+      document.getElementById("visibleColsBadge").innerText = `${visibleCount}/${columnLabels.length} Fields Visible`;
     }
 
     // Split common vs. distinct fields
@@ -508,6 +620,9 @@
       distinctColIndices = [];
 
       for (let c = 0; c < numCols; c++) {
+        // Skip analyzing if column is hidden
+        if (hiddenColIndices.has(c)) continue;
+
         const firstVal = (rawData[0][c] || "").trim();
         const isCommon = rawData.every(row => (row[c] || "").trim() === firstVal);
         if (isCommon) {
@@ -537,13 +652,25 @@
 
         const item = document.createElement("div");
         item.className = "field-item";
-        item.innerHTML = `
-          <div class="field-label">${escapeHtml(label)}</div>
-          <div class="field-body">
-            <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
-            <button class="copy-btn" onclick="copyText('${escapeJs(val)}', this)">Copy</button>
-          </div>
-        `;
+
+        // Check if this field is actively being edited
+        if (editingState && editingState.colIdx === colIdx && editingState.isCommon) {
+          item.innerHTML = renderInlineEditor(colIdx, val, true);
+        } else {
+          item.innerHTML = `
+            <div class="field-label">
+              <span>${escapeHtml(label)}</span>
+              <span style="font-size: 0.68rem; color: var(--accent);">(Shared by all)</span>
+            </div>
+            <div class="field-body">
+              <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
+              <div class="field-actions">
+                <button class="icon-btn" title="Edit value for all records" onclick="startEditing(${colIdx}, true)">✏️</button>
+                <button class="icon-btn" title="Copy value" onclick="copyText('${escapeJs(val)}', this)">📋 Copy</button>
+              </div>
+            </div>
+          `;
+        }
         container.appendChild(item);
       });
     }
@@ -561,13 +688,24 @@
 
         const item = document.createElement("div");
         item.className = "field-item";
-        item.innerHTML = `
-          <div class="field-label">${escapeHtml(label)}</div>
-          <div class="field-body">
-            <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
-            <button class="copy-btn" onclick="copyText('${escapeJs(val)}', this)">Copy</button>
-          </div>
-        `;
+
+        // Check if this field is actively being edited
+        if (editingState && editingState.colIdx === colIdx && !editingState.isCommon) {
+          item.innerHTML = renderInlineEditor(colIdx, val, false);
+        } else {
+          item.innerHTML = `
+            <div class="field-label">
+              <span>${escapeHtml(label)}</span>
+            </div>
+            <div class="field-body">
+              <span class="field-val ${isEmpty ? 'empty' : ''}">${isEmpty ? '— Empty —' : escapeHtml(val)}</span>
+              <div class="field-actions">
+                <button class="icon-btn" title="Edit field value" onclick="startEditing(${colIdx}, false)">✏️</button>
+                <button class="icon-btn" title="Copy value" onclick="copyText('${escapeJs(val)}', this)">📋 Copy</button>
+              </div>
+            </div>
+          `;
+        }
         container.appendChild(item);
       });
 
@@ -576,6 +714,80 @@
       document.getElementById("jumpSelect").value = currentIndex;
       document.getElementById("prevBtn").disabled = currentIndex === 0;
       document.getElementById("nextBtn").disabled = currentIndex === rawData.length - 1;
+    }
+
+    // HTML Generator for the Inline Editor
+    function renderInlineEditor(colIdx, currentVal, isCommon) {
+      const label = columnLabels[colIdx] || `Col ${colIdx + 1}`;
+      return `
+        <div class="inline-edit-box">
+          <div class="field-label" style="color: var(--primary);">Editing: ${escapeHtml(label)}</div>
+          <input type="text" class="inline-input" id="inlineEditInput" value="${escapeHtml(currentVal)}" autofocus onkeydown="handleEditKey(event, ${colIdx}, ${isCommon})">
+          <div class="inline-actions">
+            ${!isCommon ? `
+              <label style="font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="applyAllCheckbox"> Apply to all rows
+              </label>
+            ` : `<span style="font-size: 0.72rem; color: var(--accent);">Updates all ${rawData.length} rows</span>`}
+            <div style="display: flex; gap: 4px;">
+              <button class="icon-btn" style="background: var(--success); color: #fff;" onclick="saveInlineEdit(${colIdx}, ${isCommon})">✓ Save</button>
+              <button class="icon-btn" onclick="cancelEditing()">✕ Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Editing Operations
+    function startEditing(colIdx, isCommon) {
+      editingState = { colIdx, isCommon };
+      if (isCommon) {
+        renderCommonFields();
+      } else {
+        renderCurrentRecord();
+      }
+      setTimeout(() => {
+        const input = document.getElementById("inlineEditInput");
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }, 50);
+    }
+
+    function cancelEditing() {
+      editingState = null;
+      renderCommonFields();
+      renderCurrentRecord();
+    }
+
+    function handleEditKey(e, colIdx, isCommon) {
+      if (e.key === "Enter") {
+        saveInlineEdit(colIdx, isCommon);
+      } else if (e.key === "Escape") {
+        cancelEditing();
+      }
+    }
+
+    function saveInlineEdit(colIdx, isCommon) {
+      const input = document.getElementById("inlineEditInput");
+      if (!input) return;
+
+      const newVal = input.value;
+      const applyAll = isCommon || (document.getElementById("applyAllCheckbox") && document.getElementById("applyAllCheckbox").checked);
+
+      if (applyAll) {
+        rawData.forEach(row => {
+          row[colIdx] = newVal;
+        });
+        showToast(`Updated "${columnLabels[colIdx]}" across all records!`);
+      } else {
+        rawData[currentIndex][colIdx] = newVal;
+        showToast(`Updated record #${currentIndex + 1}`);
+      }
+
+      editingState = null;
+      refreshUI();
     }
 
     // Jump Dropdown setup
@@ -601,6 +813,7 @@
 
     // Navigation
     function navigate(delta) {
+      if (editingState) cancelEditing();
       const newIdx = currentIndex + delta;
       if (newIdx >= 0 && newIdx < rawData.length) {
         currentIndex = newIdx;
@@ -609,17 +822,61 @@
     }
 
     function jumpTo(index) {
+      if (editingState) cancelEditing();
       currentIndex = parseInt(index, 10);
       renderCurrentRecord();
     }
 
-    // Copy to clipboard
+    // Column Visibility Manager
+    function openColumnModal() {
+      const container = document.getElementById("columnCheckboxesContainer");
+      container.innerHTML = "";
+
+      columnLabels.forEach((colName, idx) => {
+        const isChecked = !hiddenColIndices.has(idx);
+        const label = document.createElement("label");
+        label.className = "col-toggle-item";
+        label.innerHTML = `
+          <input type="checkbox" data-col="${idx}" ${isChecked ? 'checked' : ''} onchange="toggleColumnVisibility(${idx}, this.checked)">
+          <span>${escapeHtml(colName || `Col ${idx + 1}`)}</span>
+        `;
+        container.appendChild(label);
+      });
+
+      document.getElementById("columnModal").classList.add("active");
+    }
+
+    function closeColumnModal() {
+      document.getElementById("columnModal").classList.remove("active");
+      refreshUI();
+    }
+
+    function toggleColumnVisibility(colIdx, isVisible) {
+      if (isVisible) {
+        hiddenColIndices.delete(colIdx);
+      } else {
+        hiddenColIndices.add(colIdx);
+      }
+    }
+
+    function toggleAllColumns(makeAllVisible) {
+      if (makeAllVisible) {
+        hiddenColIndices.clear();
+      } else {
+        columnLabels.forEach((_, idx) => hiddenColIndices.add(idx));
+      }
+      // Update modal checkboxes
+      const checkboxes = document.querySelectorAll("#columnCheckboxesContainer input[type='checkbox']");
+      checkboxes.forEach(cb => cb.checked = makeAllVisible);
+    }
+
+    // Clipboard Copy
     function copyText(text, btnElement) {
       navigator.clipboard.writeText(text).then(() => {
         showToast(`Copied: "${text}"`);
         if (btnElement) {
           const orig = btnElement.innerText;
-          btnElement.innerText = "Copied! ✓";
+          btnElement.innerText = "✓";
           btnElement.classList.add("copied");
           setTimeout(() => {
             btnElement.innerText = orig;
@@ -653,13 +910,12 @@
       document.getElementById("importModal").classList.remove("active");
     }
 
-    // Intelligent Text Parser
+    // Text & File Parsers
     function parseAndLoadText() {
       let raw = document.getElementById("rawTextInput").value.trim();
       const userHeaderToggle = document.getElementById("headerCheckbox").checked;
       if (!raw) return;
 
-      // Handle Bracketed Array Input: [ ... ]
       if (raw.startsWith("[") && raw.endsWith("]")) {
         try {
           const parsed = JSON.parse(raw);
@@ -673,7 +929,6 @@
         }
       }
 
-      // Handle JSON Input
       if (raw.startsWith("{") || raw.startsWith("[")) {
         try {
           const parsed = JSON.parse(raw);
@@ -683,7 +938,6 @@
         } catch(e) {}
       }
 
-      // Parse Delimited Text (TSV / CSV)
       parseRawDataString(raw, userHeaderToggle);
       closeImportModal();
     }
@@ -732,7 +986,6 @@
       showToast(`Loaded ${parsed.length} JSON records!`);
     }
 
-    // File Upload Handler
     function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -745,7 +998,7 @@
       reader.readAsText(file);
     }
 
-    // Export Data (Save CSV / Save JSON)
+    // Data Exporters
     function exportData(format) {
       if (!rawData || rawData.length === 0) {
         alert("No data available to export.");
@@ -799,14 +1052,16 @@
       return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, ' ');
     }
 
-    // Keyboard Shortcuts (Left / Right Arrows)
+    // Keyboard Shortcuts (Arrow navigation ignored while actively typing)
     document.addEventListener("keydown", (e) => {
-      if (document.getElementById("importModal").classList.contains("active")) return;
+      if (document.querySelector(".modal-backdrop.active")) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
       if (e.key === "ArrowLeft") navigate(-1);
       if (e.key === "ArrowRight") navigate(1);
     });
 
-    // Start in clean empty state
+    // Start empty
     initApp([]);
   </script>
 </body>
